@@ -3,8 +3,8 @@ name: Publish to APT repository
 # Runs when a package repository announces a release (see package-build.yml),
 # or by hand to publish a release again. The packages are downloaded from the
 # GitHub release of a repository that is listed in sources.yml, checked, signed
-# and added to the suite of the channel: stable to trixie, nightly to
-# trixie-nightly and test to trixie-test.
+# and added to the suite of the channel: stable to trixie and nightly to
+# trixie-nightly.
 
 on:
   repository_dispatch:
@@ -21,9 +21,8 @@ on:
         options:
           - stable
           - nightly
-          - test
       tag:
-        description: Release tag (nightly or test for those channels)
+        description: Release tag (nightly for the channel nightly)
         required: true
 
 permissions:
@@ -49,8 +48,8 @@ jobs:
           [[ "${REPOSITORY}" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || { echo "::error::Invalid repository"; exit 1; }
           [[ "${TAG}" =~ ^[A-Za-z0-9._+-]+$ ]] || { echo "::error::Invalid tag"; exit 1; }
           case "${CHANNEL}" in
-            stable) [ "${TAG}" != nightly ] && [ "${TAG}" != test ] || { echo "::error::Tag ${TAG} is not a stable release"; exit 1; } ;;
-            nightly | test) [ "${TAG}" = "${CHANNEL}" ] || { echo "::error::Channel ${CHANNEL} needs the tag ${CHANNEL}"; exit 1; } ;;
+            stable) [ "${TAG}" != nightly ] || { echo "::error::Tag ${TAG} is not a stable release"; exit 1; } ;;
+            nightly) [ "${TAG}" = nightly ] || { echo "::error::Channel nightly needs the tag nightly"; exit 1; } ;;
             *) echo "::error::Invalid channel"; exit 1 ;;
           esac
 
@@ -87,12 +86,11 @@ jobs:
         env:
           APT_DOMAIN: ${{ vars.APT_DOMAIN }}
         run: |
-          case "${CHANNEL}" in
-            stable) suite=trixie ;;
-            nightly) suite=trixie-nightly ;;
-            test) suite=trixie-test ;;
-          esac
-          ./scripts/publish-apt.sh --suite "${suite}" --debs debs --repo apt-repo
+          if [ "${CHANNEL}" = stable ]; then
+            ./scripts/publish-apt.sh --suite trixie --debs debs --repo apt-repo
+          else
+            ./scripts/publish-apt.sh --suite trixie-nightly --debs debs --repo apt-repo --replace
+          fi
 
       - name: Push the published repository
         run: |

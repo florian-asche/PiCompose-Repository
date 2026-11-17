@@ -15,12 +15,3 @@ Architectures: amd64 arm64 armhf
 Components: main
 Description: PiCompose packages (nightly builds from main)
 SignWith: yes
-
-Origin: PiCompose
-Label: PiCompose Test
-Codename: trixie-test
-Suite: trixie-test
-Architectures: amd64 arm64 armhf
-Components: main
-Description: PiCompose packages (test builds from the test branch)
-SignWith: yes

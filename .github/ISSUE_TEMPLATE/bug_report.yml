@@ -21,7 +21,6 @@ body:
       options:
         - trixie (stable)
         - trixie-nightly
-        - trixie-test
         - Installed from a downloaded .deb
     validations:
       required: true

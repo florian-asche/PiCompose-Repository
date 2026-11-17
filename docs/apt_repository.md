@@ -4,9 +4,8 @@ The repository serves packages for Debian `trixie` (Raspberry Pi OS based on tri
 
 | Suite | Content |
 | --- | --- |
-| `trixie` | Releases (tags) |
+| `trixie` | Releases |
 | `trixie-nightly` | Builds from `main` |
-| `trixie-test` | Builds from the branch `test`, for trying changes before they are merged |
 
 ## Add the repository
 
@@ -30,9 +29,9 @@ The repository serves packages for Debian `trixie` (Raspberry Pi OS based on tri
    ```
    The package `picompose-archive-keyring` takes over the key and the source file from here on, so the key can be renewed with a normal upgrade. dpkg asks whether to replace the source file you created. Answer yes, or use `-o Dpkg::Options::=--force-confnew` in scripts.
 
-Replace `trixie` with `trixie-nightly` to get builds from `main`, or with `trixie-test` for builds from the branch `test`. Nightly and test builds can break, so do not use them on devices you rely on.
+Replace `trixie` with `trixie-nightly` to get builds from `main`. Nightly builds can break, so do not use them on devices you rely on. Builds of other branches are not in the repository. They are workflow artifacts of the package repository and are kept for 14 days.
 
-A suite holds one version per package. A newer release, nightly or test build replaces the previous one in that suite.
+A suite holds one version per package. A newer release or nightly build replaces the previous one in that suite.
 
 ## Remove the repository
 

@@ -24,19 +24,20 @@ PiCompose-Package-<Name>                   PiCompose-Repository
 
 The package repository never sees the signing key. The dispatch only says which repository, channel and release to publish. `publish.yml` downloads the packages itself from the GitHub release, and only if the repository is listed in `sources.yml` and the package names and versions fit the channel. A leaked dispatch token can therefore only publish what is already in a release of a listed repository.
 
-| Event in the package repository | Channel | Suite | Version |
+| Event in the package repository | Channel | Result | Version |
 | --- | --- | --- | --- |
-| Published release with the tag `v<version>` | stable | `trixie` | `<version>` |
-| Push to `main` | nightly | `trixie-nightly` | `<next version>~git<timestamp>.<sha>` |
-| Push to the branch `test` | test | `trixie-test` | `<next version>~test<timestamp>.<sha>` |
-| Pull request | none | none | built and linted only |
+| Published release with the tag `v<version>` | stable | suite `trixie` | `<version>` |
+| Push to `main` | nightly | suite `trixie-nightly` | `<next version>~git<timestamp>.<sha>` |
+| Push to any other branch, pull request from a fork | dev | workflow artifact, kept for 14 days | `<next patch version>~dev<timestamp>.<sha>` |
 
 - The package repository does not maintain `debian/changelog`. The build writes it and the file ends up in the package (`/usr/share/doc/<package>/changelog.gz`, shown by `apt changelog`). The file in git is a placeholder.
-- A release gives the version of its tag (`v1.2.0` gives `1.2.0`) and its release text as changelog entry, dated with the publication of the release. Create the release in the GitHub UI, and let GitHub generate the notes from the merged pull requests.
-- A push to `main` or `test` counts the version up: the next patch version after the newest release tag (`0.0.1` while there is none), for example `1.2.1~git20261117060000.abc1234`. The changelog entry is made from the title and text of the pull request of the commit, or from the commit message if there is none.
+- **Next version:** The newest release tag (`v<major>.<minor>.<patch>`, none counts as `0.0.0`) is raised according to the text of every commit since that tag. The text of a commit is its message plus the title and description of its pull request. `#major` in that text raises the major version, `#minor` the minor version, and anything else, including no marker, the patch version. The highest marker wins. Example: after `v1.2.3` a commit with `#minor` and one without a marker give `1.3.0`.
+- **Release:** The tag of a release has to be exactly that next version. If it is not, the build fails and names the expected version, so the version that was published as nightly is the one that becomes stable. Create the release in the GitHub UI and let GitHub generate the notes from the merged pull requests. They become the changelog entry, dated with the publication of the release.
+- **Nightly:** The changelog entry is the title and description of the pull request of the commit, or the commit message if there is none.
+- **Dev:** Branches are for changes that are tried before they are merged. The version is the next patch version, so it is enough to install the artifact on a test device. Nothing is published and there is no APT suite for it.
 - The `~` makes a pre-release sort below the release it leads to. The timestamp (`YYYYMMDDHHMMSS`) is the same for all architectures of one build and makes a newer push sort above an older one.
-- Nightly and test builds are attached to a rolling pre-release of the package repository with the tag `nightly` or `test`. Every push replaces it.
-- A suite holds one version per package. A newer build replaces the previous one in that suite.
+- Nightly builds are attached to a rolling pre-release of the package repository with the tag `nightly`. Every push replaces it.
+- A suite holds one version per package. A newer build replaces the previous one in that suite, the nightly suite takes the newest build even if its version is lower than the one before.
 - Packages with `Architecture: all` are built on `amd64` only. Everything else is built for `amd64`, `arm64` and `armhf`.
 
 ## Repository Layout

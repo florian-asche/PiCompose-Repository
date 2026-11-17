@@ -10,7 +10,7 @@ PiCompose installs audio drivers, the audio server configuration, the Docker Com
 
 - Every package has its own repository with its source, history and releases
 - The package repositories build their packages with the reusable workflow of this repository, for Debian `trixie` on `amd64`, `arm64` and `armhf`
-- Stable packages come from version tags, nightly builds from `main` and test builds from the branch `test` of a package repository
+- Stable packages come from releases and nightly builds from `main` of a package repository. Other branches are built too, but their packages are only kept as workflow artifacts for 14 days.
 - This repository checks, signs and publishes what the listed package repositories release. The signing key exists only here.
 - The repository is a set of static files signed with a dedicated GPG key and served by GitHub Pages
 
@@ -41,7 +41,7 @@ sudo apt update
 sudo apt install picompose-archive-keyring
 ```
 
-Use the suite `trixie-nightly` instead of `trixie` for builds from `main`, or `trixie-test` for builds from the branch `test`.
+Use the suite `trixie-nightly` instead of `trixie` for builds from `main`.
 
 ## Development
 

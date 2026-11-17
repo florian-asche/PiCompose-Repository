@@ -2,11 +2,11 @@
 """
 Check .deb files downloaded from a package repository before they are signed and published.
 
-Usage: check-debs.py --repository <owner/name> --channel <stable|nightly|test> --debs <dir> [--sources <file>]
+Usage: check-debs.py --repository <owner/name> --channel <stable|nightly> --debs <dir> [--sources <file>]
 
 Fails unless the repository is listed in sources.yml, every package name is one
 of the packages listed for it, the architecture is supported and the version
-matches the channel and is the same for all architectures of a package: nightly versions contain ~git, test versions ~test and
+matches the channel and is the same for all architectures of a package: nightly versions contain ~git and
 stable versions no ~.
 """
 import argparse
@@ -17,7 +17,7 @@ from pathlib import Path
 import yaml
 
 ARCHITECTURES = {"amd64", "arm64", "armhf", "all"}
-VERSION_MARKERS = {"stable": None, "nightly": "~git", "test": "~test"}
+VERSION_MARKERS = {"stable": None, "nightly": "~git"}
 
 
 def deb_field(deb: Path, field: str) -> str:

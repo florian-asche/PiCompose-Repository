@@ -11,12 +11,20 @@ name: Build package
 #       secrets:
 #         hub-token: ${{ secrets.HUB_DISPATCH_TOKEN }}
 #
-# Pushes to main build the nightly channel, pushes to the branch test the test
-# channel and a published release the stable channel. Pull requests and other
-# branches only build. The package repository does not maintain debian/changelog:
-# the build writes it. A release gives the version of its tag and the release
-# text, a push the next patch version after the newest tag and the text of the
-# pull request of the commit. The packages are attached to a GitHub release of
+# A push to main builds the nightly channel, a published release the stable
+# channel. Both are published to the APT repository. Every other branch and
+# pull requests from forks build the dev channel: nothing is published, the
+# packages are kept as workflow artifacts for 14 days.
+#
+# The package repository does not maintain debian/changelog, the build writes it
+# (see scripts/package-version.py and scripts/make-changelog.py):
+#   stable   version of the release tag, which has to be the version the commits
+#            since the last tag lead to; text of the release
+#   nightly  next version after the newest tag, raised by #major or #minor in
+#            the text of a commit or pull request (patch by default); text of the
+#            pull request of the commit
+#   dev      next patch version; text of the pull request of the commit
+# The packages of a release or nightly build are attached to a GitHub release of
 # the package repository and the APT repository is told to publish them.
 
 on:
@@ -53,15 +61,17 @@ jobs:
       - name: Select channel
         id: channel
         run: |
-          channel=none
+          channel=dev
           if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
             channel=stable
           elif [ "${GITHUB_EVENT_NAME}" = "push" ]; then
             if [ "${GITHUB_REF_NAME}" = "main" ]; then
               channel=nightly
-            elif [ "${GITHUB_REF_NAME}" = "test" ]; then
-              channel=test
+            else
+              channel=dev
             fi
+          elif [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            channel=dev
           fi
           echo "channel=${channel}" >> "${GITHUB_OUTPUT}"
 
@@ -75,20 +85,18 @@ jobs:
           RELEASE_DATE: ${{ github.event.release.published_at }}
         run: |
           mkdir -p "${RUNNER_TEMP}/notes"
+          script=.picompose-repository/scripts/package-version.py
+          stamp="$(date -u +%Y%m%d%H%M%S)"
           if [ "${CHANNEL}" = "stable" ]; then
-            version="$(python3 .picompose-repository/scripts/package-version.py --channel stable --tag "${RELEASE_TAG}")"
+            version="$(python3 "${script}" --channel stable --tag "${RELEASE_TAG}" --repository "${GITHUB_REPOSITORY}")"
             printf '%s\n' "${RELEASE_BODY}" > "${RUNNER_TEMP}/notes/notes.txt"
             entry_date="$(date -u -d "${RELEASE_DATE}" -R)"
-          elif [ "${CHANNEL}" != "none" ]; then
-            version="$(python3 .picompose-repository/scripts/package-version.py --channel "${CHANNEL}" --stamp "$(date -u +%Y%m%d%H%M%S)" --sha "${GITHUB_SHA::7}")"
+          else
+            version="$(python3 "${script}" --channel "${CHANNEL}" --stamp "${stamp}" --sha "${GITHUB_SHA::7}" --repository "${GITHUB_REPOSITORY}")"
             gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" -q '.[0] | select(. != null) | .title + "\n\n" + (.body // "")' > "${RUNNER_TEMP}/notes/notes.txt" || true
             if [ ! -s "${RUNNER_TEMP}/notes/notes.txt" ]; then
               git log -1 --format=%B > "${RUNNER_TEMP}/notes/notes.txt"
             fi
-            entry_date="$(date -u -R)"
-          else
-            version="$(python3 .picompose-repository/scripts/package-version.py --channel nightly --stamp "$(date -u +%Y%m%d%H%M%S)" --sha "${GITHUB_SHA::7}")"
-            printf 'Build of %s\n' "${GITHUB_SHA::7}" > "${RUNNER_TEMP}/notes/notes.txt"
             entry_date="$(date -u -R)"
           fi
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
@@ -102,6 +110,7 @@ jobs:
           name: changelog-notes
           path: ${{ runner.temp }}/notes/notes.txt
           if-no-files-found: error
+          retention-days: 1
 
       - name: Compute matrix
         id: matrix
@@ -154,11 +163,12 @@ jobs:
           name: deb-${{ matrix.arch }}
           path: out/*.deb
           if-no-files-found: error
+          retention-days: 14
 
   release:
     name: Release and publish
     needs: [prepare, build]
-    if: needs.prepare.outputs.channel != 'none'
+    if: needs.prepare.outputs.channel == 'stable' || needs.prepare.outputs.channel == 'nightly'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
