@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Write debian/changelog with a single entry made from release or pull request text.
+Add an entry made from release or pull request text to the top of debian/changelog.
 
 Usage: make-changelog.py <source-dir> --version <version> --notes-file <file> [--date <RFC 2822 date>]
 
-The package name and the maintainer come from debian/control. Lines of the
+The existing entries are kept, except the placeholder version 0.0.0 of a new package. The package name and the maintainer come from debian/control. Lines of the
 notes become changelog items: Markdown bullets lose their marks, headings,
 HTML comments,
 empty lines and the "Full Changelog" line GitHub adds are dropped.
@@ -49,7 +49,11 @@ def main() -> None:
 
     body = "\n".join(f"  * {item}" for item in items)
     entry = f"{source_name} ({args.version}) trixie; urgency=medium\n\n{body}\n\n -- {maintainer}  {args.date or formatdate(localtime=True)}\n"
-    (args.source / "debian" / "changelog").write_text(entry, encoding="utf-8")
+    changelog = args.source / "debian" / "changelog"
+    existing = changelog.read_text(encoding="utf-8") if changelog.exists() else ""
+    if re.match(rf"^{re.escape(source_name)} \(0\.0\.0\)", existing):
+        existing = ""
+    changelog.write_text(entry + ("\n" + existing if existing else ""), encoding="utf-8")
 
 
 if __name__ == "__main__":

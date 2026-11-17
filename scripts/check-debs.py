@@ -6,8 +6,8 @@ Usage: check-debs.py --repository <owner/name> --channel <stable|nightly> --debs
 
 Fails unless the repository is listed in sources.yml, every package name is one
 of the packages listed for it, the architecture is supported and the version
-matches the channel and is the same for all architectures of a package: nightly versions contain ~git and
-stable versions no ~.
+matches the channel and is the same for all architectures of a package: nightly versions contain +git and
+stable versions neither ~ nor +git.
 """
 import argparse
 import subprocess
@@ -17,7 +17,7 @@ from pathlib import Path
 import yaml
 
 ARCHITECTURES = {"amd64", "arm64", "armhf", "all"}
-VERSION_MARKERS = {"stable": None, "nightly": "~git"}
+VERSION_MARKERS = {"stable": None, "nightly": "+git"}
 
 
 def deb_field(deb: Path, field: str) -> str:
@@ -55,8 +55,8 @@ def main() -> None:
             errors.append(f"{deb.name}: package {name} is not allowed for {args.repository}")
         if arch not in ARCHITECTURES:
             errors.append(f"{deb.name}: unsupported architecture {arch}")
-        if marker is None and "~" in version:
-            errors.append(f"{deb.name}: version {version} contains ~, not a stable release")
+        if marker is None and ("~" in version or "+git" in version or "+dev" in version):
+            errors.append(f"{deb.name}: version {version} is not a stable release")
         if marker is not None and marker not in version:
             errors.append(f"{deb.name}: version {version} does not contain {marker}")
         versions.setdefault(name, set()).add(version)

@@ -1,34 +1,36 @@
 name: Build package
 
 # Reusable workflow for package repositories. A package repository calls it
-# from its own workflow:
+# from its own workflows:
 #
-#   jobs:
-#     package:
-#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-build.yml@main
-#       permissions:
-#         contents: write
-#       secrets:
-#         hub-token: ${{ secrets.HUB_DISPATCH_TOKEN }}
+#   build.yml (push and pull request)
+#     jobs:
+#       package:
+#         uses: florian-asche/PiCompose-Repository/.github/workflows/package-build.yml@main
+#         permissions:
+#           contents: write
+#         secrets:
+#           hub-token: ${{ secrets.HUB_DISPATCH_TOKEN }}
 #
-# A push to main builds the nightly channel, a published release the stable
-# channel. Both are published to the APT repository. Every other branch and
-# pull requests from forks build the dev channel: nothing is published, the
-# packages are kept as workflow artifacts for 14 days.
+# A push to main builds the nightly channel. Every other branch and pull requests
+# from forks build the dev channel: nothing is published, the packages are kept as
+# workflow artifacts for 14 days. The channel stable is built by package-release.yml,
+# which passes the version of the release.
 #
-# The package repository does not maintain debian/changelog, the build writes it
-# (see scripts/package-version.py and scripts/make-changelog.py):
-#   stable   version of the release tag, which has to be the version the commits
-#            since the last tag lead to; text of the release
-#   nightly  next version after the newest tag, raised by #major or #minor in
-#            the text of a commit or pull request (patch by default); text of the
-#            pull request of the commit
-#   dev      next patch version; text of the pull request of the commit
-# The packages of a release or nightly build are attached to a GitHub release of
-# the package repository and the APT repository is told to publish them.
+# debian/changelog holds the releases. stable builds it as it is. nightly and dev
+# add an entry made from the text of the pull request of the commit (or the commit
+# message) in the build only, with the version <last release>+git<timestamp>.<sha>
+# or <last release>+dev<timestamp>.<sha> (see scripts/package-version.py).
+# The packages of a stable or nightly build are attached to a GitHub release of the
+# package repository and the APT repository is told to publish them.
 
 on:
   workflow_call:
+    inputs:
+      release-version:
+        description: Version of the release to build (channel stable), empty for nightly and dev
+        type: string
+        default: ''
     secrets:
       hub-token:
         description: Token that may start workflows of the APT repository (Actions, read and write)
@@ -50,6 +52,7 @@ jobs:
       - name: Checkout package repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.release-version != '' && format('v{0}', inputs.release-version) || '' }}
           fetch-depth: 0
 
       - name: Checkout build scripts
@@ -62,16 +65,10 @@ jobs:
         id: channel
         run: |
           channel=dev
-          if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
+          if [ -n "${{ inputs.release-version }}" ]; then
             channel=stable
-          elif [ "${GITHUB_EVENT_NAME}" = "push" ]; then
-            if [ "${GITHUB_REF_NAME}" = "main" ]; then
-              channel=nightly
-            else
-              channel=dev
-            fi
-          elif [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-            channel=dev
+          elif [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF_NAME}" = "main" ]; then
+            channel=nightly
           fi
           echo "channel=${channel}" >> "${GITHUB_OUTPUT}"
 
@@ -80,31 +77,33 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           CHANNEL: ${{ steps.channel.outputs.channel }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          RELEASE_BODY: ${{ github.event.release.body }}
-          RELEASE_DATE: ${{ github.event.release.published_at }}
+          RELEASE_VERSION: ${{ inputs.release-version }}
         run: |
           mkdir -p "${RUNNER_TEMP}/notes"
           script=.picompose-repository/scripts/package-version.py
-          stamp="$(date -u +%Y%m%d%H%M%S)"
           if [ "${CHANNEL}" = "stable" ]; then
-            version="$(python3 "${script}" --channel stable --tag "${RELEASE_TAG}" --repository "${GITHUB_REPOSITORY}")"
-            printf '%s\n' "${RELEASE_BODY}" > "${RUNNER_TEMP}/notes/notes.txt"
-            entry_date="$(date -u -d "${RELEASE_DATE}" -R)"
+            first_line="$(head -n 1 debian/changelog)"
+            if [[ "${first_line}" != *"(${RELEASE_VERSION})"* ]]; then
+              echo "::error::The first entry of debian/changelog is not ${RELEASE_VERSION}: ${first_line}"
+              exit 1
+            fi
+            version="${RELEASE_VERSION}"
+            entry_date=""
           else
-            version="$(python3 "${script}" --channel "${CHANNEL}" --stamp "${stamp}" --sha "${GITHUB_SHA::7}" --repository "${GITHUB_REPOSITORY}")"
+            version="$(python3 "${script}" --channel "${CHANNEL}" --stamp "$(date -u +%Y%m%d%H%M%S)" --sha "${GITHUB_SHA::7}")"
             gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" -q '.[0] | select(. != null) | .title + "\n\n" + (.body // "")' > "${RUNNER_TEMP}/notes/notes.txt" || true
             if [ ! -s "${RUNNER_TEMP}/notes/notes.txt" ]; then
               git log -1 --format=%B > "${RUNNER_TEMP}/notes/notes.txt"
             fi
-            entry_date="$(date -u -R)"
+            entry_date="$(date -R)"
+            cat "${RUNNER_TEMP}/notes/notes.txt"
           fi
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
           echo "entry_date=${entry_date}" >> "${GITHUB_OUTPUT}"
           echo "${version}"
-          cat "${RUNNER_TEMP}/notes/notes.txt"
 
       - name: Upload changelog text
+        if: steps.channel.outputs.channel != 'stable'
         uses: actions/upload-artifact@v4
         with:
           name: changelog-notes
@@ -129,6 +128,8 @@ jobs:
     steps:
       - name: Checkout package repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release-version != '' && format('v{0}', inputs.release-version) || '' }}
 
       - name: Checkout build scripts
         uses: actions/checkout@v4
@@ -143,6 +144,7 @@ jobs:
           platforms: linux/arm/v7
 
       - name: Download changelog text
+        if: needs.prepare.outputs.channel != 'stable'
         uses: actions/download-artifact@v4
         with:
           name: changelog-notes
@@ -152,9 +154,13 @@ jobs:
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
           ENTRY_DATE: ${{ needs.prepare.outputs.entry_date }}
+          CHANNEL: ${{ needs.prepare.outputs.channel }}
         run: |
-          ./.picompose-repository/scripts/build-package.sh . "${{ matrix.arch }}" --version "${VERSION}" \
-            --notes-file "${RUNNER_TEMP}/notes/notes.txt" --date "${ENTRY_DATE}" --out "${RUNNER_TEMP}/out"
+          changelog=()
+          if [ "${CHANNEL}" != "stable" ]; then
+            changelog=(--version "${VERSION}" --notes-file "${RUNNER_TEMP}/notes/notes.txt" --date "${ENTRY_DATE}")
+          fi
+          ./.picompose-repository/scripts/build-package.sh . "${{ matrix.arch }}" "${changelog[@]}" --out "${RUNNER_TEMP}/out"
           mkdir out && cp "${RUNNER_TEMP}"/out/*.deb out/
 
       - name: Upload packages
@@ -187,7 +193,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${CHANNEL}" = "stable" ]; then
-            tag="${{ github.event.release.tag_name }}"
+            tag="v${{ inputs.release-version }}"
             gh release upload "${tag}" debs/*.deb --repo "${GITHUB_REPOSITORY}" --clobber
           else
             tag="${CHANNEL}"
