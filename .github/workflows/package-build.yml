@@ -35,7 +35,7 @@ on:
   workflow_call:
     inputs:
       release-version:
-        description: Version of the release to build (channel stable), empty for trixie-nightly and dev
+        description: Version of the release to build (channel trixie), empty for trixie-nightly and dev
         type: string
         default: ''
     secrets:
@@ -65,7 +65,7 @@ jobs:
         run: |
           channel=dev
           if [ -n "${{ inputs.release-version }}" ]; then
-            channel=stable
+            channel=trixie
           elif [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF_NAME}" = "main" ]; then
             channel=trixie-nightly
           fi
@@ -96,7 +96,7 @@ jobs:
           skip=false
           ref=""
           entry_date=""
-          if [ "${CHANNEL}" = "stable" ]; then
+          if [ "${CHANNEL}" = "trixie" ]; then
             first_line="$(head -n 1 debian/changelog)"
             if [[ "${first_line}" != *"(${RELEASE_VERSION})"* ]]; then
               echo "::error::The first entry of debian/changelog is not ${RELEASE_VERSION}: ${first_line}"
@@ -208,7 +208,7 @@ jobs:
   publish:
     name: Publish
     needs: [prepare, build]
-    if: needs.prepare.outputs.skip != 'true' && (needs.prepare.outputs.channel == 'stable' || needs.prepare.outputs.channel == 'trixie-nightly')
+    if: needs.prepare.outputs.skip != 'true' && (needs.prepare.outputs.channel == 'trixie' || needs.prepare.outputs.channel == 'trixie-nightly')
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -216,7 +216,7 @@ jobs:
       CHANNEL: ${{ needs.prepare.outputs.channel }}
     steps:
       - name: Attach packages to the release
-        if: needs.prepare.outputs.channel == 'stable'
+        if: needs.prepare.outputs.channel == 'trixie'
         uses: actions/download-artifact@v4
         with:
           pattern: deb-*
@@ -224,7 +224,7 @@ jobs:
           path: debs
 
       - name: Upload to the GitHub release
-        if: needs.prepare.outputs.channel == 'stable'
+        if: needs.prepare.outputs.channel == 'trixie'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "v${{ needs.prepare.outputs.version }}" debs/*.deb --repo "${GITHUB_REPOSITORY}" --clobber

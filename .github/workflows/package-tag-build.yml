@@ -51,7 +51,7 @@ jobs:
           fi
           channel=trixie-nightly
           if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
-            channel=stable
+            channel=trixie
           fi
           {
             echo "channel=${channel}"
@@ -140,7 +140,7 @@ jobs:
         run: gh release upload "${TAG}" debs/*.deb --repo "${GITHUB_REPOSITORY}" --clobber
 
       - name: Generate the release notes again for the release
-        if: needs.prepare.outputs.channel == 'stable'
+        if: needs.prepare.outputs.channel == 'trixie'
         run: |
           previous="$(gh release list --repo "${GITHUB_REPOSITORY}" --exclude-pre-releases --exclude-drafts --limit 20 --json tagName -q '.[].tagName' | grep -vx "${TAG}" | head -n 1 || true)"
           args=(-f "tag_name=${TAG}")

@@ -22,7 +22,7 @@ PiCompose-Package-<Name>                   PiCompose-Repository
                                              5. check, sign, add to the suite
 ```
 
-The package repository never sees the signing key. The call only says which repository, channel and workflow run to publish. `publish.yml` downloads the packages itself from the artifacts of that run, and only if the repository is listed in `sources.yml`, the run is a build of `main` of that repository itself (trixie-nightly) or a release (stable), the package names are the listed ones and the version is a plain release version. A leaked token can therefore only publish builds of `main` that exist already.
+The package repository never sees the signing key. The call only says which repository, channel and workflow run to publish. `publish.yml` downloads the packages itself from the artifacts of that run, and only if the repository is listed in `sources.yml`, the run is a build of `main` of that repository itself (trixie-nightly) or a release (trixie), the package names are the listed ones and the version is a plain release version. A leaked token can therefore only publish builds of `main` that exist already.
 
 **The version belongs to the package.** It is the first entry of `debian/changelog` in the package repository.
 
@@ -55,7 +55,7 @@ scripts/
   publish-apt.sh        add .deb files to the repository tree and sign it
 docs/                   documentation
 .github/workflows/
-  package-build.yml     reusable build workflow (nightly, dev and stable), called by the package repositories
+  package-build.yml     reusable build workflow (trixie-nightly, dev and trixie), called by the package repositories
   package-release.yml   reusable release workflow: tag, release, then a stable build
   package-pr-check.yml  reusable check that a pull request has a version label
   publish.yml           publish workflow, started by a package repository after a release
