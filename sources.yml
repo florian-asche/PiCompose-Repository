@@ -7,3 +7,24 @@ repositories:
   florian-asche/PiCompose-Package-Archive-Keyring:
     packages:
       - picompose-archive-keyring
+  florian-asche/PiCompose-Package-Core:
+    packages:
+      - picompose-core
+  florian-asche/PiCompose-Package-HA-Satellite:
+    packages:
+      - ha-satellite
+  florian-asche/PiCompose-Package-Driver-2MicHat-V1:
+    packages:
+      - picompose-driver-2michat-v1
+  florian-asche/PiCompose-Package-Driver-2MicHat-V2:
+    packages:
+      - picompose-driver-2michat-v2
+  florian-asche/PiCompose-Package-Driver-ReSpeaker-Lite:
+    packages:
+      - picompose-driver-respeaker-lite
+  florian-asche/PiCompose-Package-Driver-Satellite1:
+    packages:
+      - picompose-driver-satellite1
+  florian-asche/PiCompose-Package-Driver-Other:
+    packages:
+      - picompose-driver-other

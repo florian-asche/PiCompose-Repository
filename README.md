@@ -20,8 +20,15 @@ PiCompose installs audio drivers, the audio server configuration, the Docker Com
 | --- | --- | --- |
 | `picompose-archive-keyring` | [PiCompose-Package-Archive-Keyring](https://github.com/florian-asche/PiCompose-Package-Archive-Keyring) | Signing key and apt source of this repository |
 | `picompose-hello` | [PiCompose-Package-Hello](https://github.com/florian-asche/PiCompose-Package-Hello) | Example package and template, tests the pipeline |
+| `picompose-core` | [PiCompose-Package-Core](https://github.com/florian-asche/PiCompose-Package-Core) | Docker, compose manager, PipeWire audio and hostname setup (stage 01 of the image) |
+| `ha-satellite` | [PiCompose-Package-HA-Satellite](https://github.com/florian-asche/PiCompose-Package-HA-Satellite) | Linux voice assistant and Snapcast compose projects (stage 03) |
+| `picompose-driver-2michat-v1` | [PiCompose-Package-Driver-2MicHat-V1](https://github.com/florian-asche/PiCompose-Package-Driver-2MicHat-V1) | ReSpeaker 2-Mics, 4-Mics and 6-Mics Pi HAT (DKMS) |
+| `picompose-driver-2michat-v2` | [PiCompose-Package-Driver-2MicHat-V2](https://github.com/florian-asche/PiCompose-Package-Driver-2MicHat-V2) | ReSpeaker 2-Mics Pi HAT V2.0 |
+| `picompose-driver-respeaker-lite` | [PiCompose-Package-Driver-ReSpeaker-Lite](https://github.com/florian-asche/PiCompose-Package-Driver-ReSpeaker-Lite) | ReSpeaker Lite |
+| `picompose-driver-satellite1` | [PiCompose-Package-Driver-Satellite1](https://github.com/florian-asche/PiCompose-Package-Driver-Satellite1) | Satellite1 |
+| `picompose-driver-other` | [PiCompose-Package-Driver-Other](https://github.com/florian-asche/PiCompose-Package-Driver-Other) | Sound cards without a driver |
 
-Planned: audio drivers, `picompose-core`, audio configuration and the voice assistant, each in its own repository. The packages that may publish are listed in [sources.yml](sources.yml).
+The packages that may publish are listed in [sources.yml](sources.yml). The packages from `picompose-core` on are prepared and not published yet.
 
 ## Usage
 
