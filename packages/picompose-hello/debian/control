@@ -8,7 +8,7 @@ Homepage: https://github.com/florian-asche/PiCompose-Repository
 Rules-Requires-Root: no
 
 Package: picompose-hello
-Architecture: all
+Architecture: any
 Depends: ${misc:Depends}
 Description: PiCompose test package
  Minimal package that prints a greeting. It exists to test the build,
