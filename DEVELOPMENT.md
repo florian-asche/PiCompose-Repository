@@ -24,20 +24,18 @@ PiCompose-Package-<Name>                   PiCompose-Repository
 
 The package repository never sees the signing key. The dispatch only says which repository, channel and release to publish. `publish.yml` downloads the packages itself from the GitHub release, and only if the repository is listed in `sources.yml` and the package names and versions fit the channel. A leaked dispatch token can therefore only publish what is already in a release of a listed repository.
 
-| Event in the package repository | Channel | Result | Version |
+| Started by | Channel | Result | Version |
 | --- | --- | --- | --- |
-| Published release with the tag `v<version>` | stable | suite `trixie` | `<version>` |
-| Push to `main` | nightly | suite `trixie-nightly` | `<next version>~git<timestamp>.<sha>` |
-| Push to any other branch, pull request from a fork | dev | workflow artifact, kept for 14 days | `<next patch version>~dev<timestamp>.<sha>` |
+| Workflow "Release" with a version | stable | suite `trixie` | the version you enter |
+| Push to `main` | nightly | suite `trixie-nightly` | `<last release>+git<timestamp>.<sha>` |
+| Push to any other branch, pull request from a fork | dev | workflow artifact, kept for 14 days | `<last release>+dev<timestamp>.<sha>` |
 
-- The package repository does not maintain `debian/changelog`. The build writes it and the file ends up in the package (`/usr/share/doc/<package>/changelog.gz`, shown by `apt changelog`). The file in git is a placeholder.
-- **Next version:** The newest release tag (`v<major>.<minor>.<patch>`, none counts as `0.0.0`) is raised according to the text of every commit since that tag. The text of a commit is its message plus the title and description of its pull request. `#major` in that text raises the major version, `#minor` the minor version, and anything else, including no marker, the patch version. The highest marker wins. Example: after `v1.2.3` a commit with `#minor` and one without a marker give `1.3.0`.
-- **Release:** The tag of a release has to be exactly that next version. If it is not, the build fails and names the expected version, so the version that was published as nightly is the one that becomes stable. Create the release in the GitHub UI and let GitHub generate the notes from the merged pull requests. They become the changelog entry, dated with the publication of the release.
-- **Nightly:** The changelog entry is the title and description of the pull request of the commit, or the commit message if there is none.
-- **Dev:** Branches are for changes that are tried before they are merged. The version is the next patch version, so it is enough to install the artifact on a test device. Nothing is published and there is no APT suite for it.
-- The `~` makes a pre-release sort below the release it leads to. The timestamp (`YYYYMMDDHHMMSS`) is the same for all architectures of one build and makes a newer push sort above an older one.
-- Nightly builds are attached to a rolling pre-release of the package repository with the tag `nightly`. Every push replaces it.
-- A suite holds one version per package. A newer build replaces the previous one in that suite, the nightly suite takes the newest build even if its version is lower than the one before.
+- **`debian/changelog` holds the releases.** It lives in the package repository and ends up in the package (`/usr/share/doc/<package>/changelog.gz`, shown by `apt changelog`), so the package contains the whole history.
+- **Release:** You decide the version. Start the workflow "Release" of the package repository (Actions, Release, Run workflow) and enter a version like `1.2.3` that is higher than the last release. The workflow writes the changelog entry from the notes GitHub generates from the pull requests merged since the last release, commits `debian/changelog` to `main`, tags that commit `v<version>`, creates the GitHub release and builds and publishes the packages from the tag. A release created by hand in the GitHub UI is not published.
+- **Nightly:** Without a release, the version is the last release with a suffix: `1.2.3+git20261117071500.abc1234`. The `+` sorts it above `1.2.3` and below every later release, and the timestamp makes a newer build sort above an older one. The build adds a changelog entry made from the title and description of the pull request of the commit (or the commit message) to the package only, nothing is committed. Every build overwrites the file of the previous one: the rolling pre-release `nightly` of the package repository and the nightly suite hold only the newest build.
+- **Dev:** Branches are for changes that are tried before they are merged, so the version is `<last release>+dev<timestamp>.<sha>`, which installs as an upgrade of the last release. Nothing is published and there is no APT suite for it.
+- The package repository only needs a pre-release with the tag `nightly` as carrier for the files of the nightly build. Every push deletes and recreates it.
+- A suite holds one version per package. The stable suite takes a newer version, the nightly suite takes the newest build even if its version is lower than the one before.
 - Packages with `Architecture: all` are built on `amd64` only. Everything else is built for `amd64`, `arm64` and `armhf`.
 
 ## Repository Layout
@@ -48,13 +46,14 @@ apt/conf/               reprepro configuration (suites and architectures)
 scripts/
   build-package.sh      build one package for one architecture in a container
   arch-matrix.py        print the build matrix (architectures) of a package repository
-  package-version.py    compute the version of a build (release tag or next patch version)
-  make-changelog.py     write debian/changelog from release or pull request text
+  package-version.py    compute the version of a nightly or dev build, check the version of a release
+  make-changelog.py     add a changelog entry from release or pull request text
   check-debs.py         check downloaded .deb files against sources.yml and the channel
   publish-apt.sh        add .deb files to the repository tree and sign it
 docs/                   documentation
 .github/workflows/
-  package-build.yml     reusable build workflow, called by the package repositories
+  package-build.yml     reusable build workflow (nightly, dev and stable), called by the package repositories
+  package-release.yml   reusable release workflow: changelog, tag, release, then a stable build
   publish.yml           publish workflow, started by a package repository after a release
   ci.yml                lint of this repository
 ```
@@ -63,7 +62,7 @@ docs/                   documentation
 
 1. Create a repository `PiCompose-Package-<Name>` from the template [PiCompose-Package-Hello](https://github.com/florian-asche/PiCompose-Package-Hello) and follow its README.
 2. Add the repository and its package names to `sources.yml` in this repository. Publishing is refused until this is merged.
-3. Add the secret `HUB_DISPATCH_TOKEN` to the package repository (see "Dispatch token" below).
+3. Add the secret `HUB_DISPATCH_TOKEN` to the package repository (see "Dispatch token" below), and allow the Actions of the package repository to write (Settings, Actions, General, Workflow permissions, or the permissions of the workflows are enough). If `main` is protected, the workflow "Release" has to be allowed to push to it, because it commits `debian/changelog`.
 4. Push to `main` to publish the first nightly build, then add the package to the table in `README.md`.
 
 Conventions:
@@ -83,7 +82,7 @@ Check out a package repository and build it with the script of this repository:
 ./scripts/build-package.sh ../PiCompose-Package-Hello amd64
 ```
 
-The `.deb` files end up in `out/`. The script installs the build dependencies in a fresh container, runs `dpkg-buildpackage` and then `lintian`. Errors reported by lintian fail the build. The `debian/changelog` of the repository is used as it is. To build with a generated entry, pass `--version <version> --notes-file <file>`, see `scripts/build-package.sh`.
+The `.deb` files end up in `out/`. The script installs the build dependencies in a fresh container, runs `dpkg-buildpackage` and then `lintian`. Errors reported by lintian fail the build. The `debian/changelog` of the repository is used as it is. To build like a nightly, pass `--version <version> --notes-file <file>` to add an entry, see `scripts/build-package.sh`.
 
 Other architectures run through QEMU emulation when your host is not that architecture, which is slow. Register the emulators once with `docker run --privileged --rm tonistiigi/binfmt --install all`.
 
