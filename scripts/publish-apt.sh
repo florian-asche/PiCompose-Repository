@@ -36,6 +36,17 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p "${REPO_DIR}/conf"
 cp "${ROOT_DIR}"/apt/conf/* "${REPO_DIR}/conf/"
 
+# Forget suites that were removed from the configuration, including their files.
+if [ -d "${REPO_DIR}/db" ]; then
+    reprepro --basedir "$REPO_DIR" --delete clearvanished
+fi
+for dist_dir in "${REPO_DIR}"/dists/*/; do
+    [ -d "$dist_dir" ] || continue
+    if ! grep -q "^Codename: $(basename "$dist_dir")$" "${REPO_DIR}/conf/distributions"; then
+        rm -rf "$dist_dir"
+    fi
+done
+
 shopt -s nullglob
 DEBS=("${DEBS_DIR}"/*.deb)
 if [ ${#DEBS[@]} -eq 0 ]; then
@@ -52,6 +63,8 @@ fi
 for deb in "${DEBS[@]}"; do
     reprepro --basedir "$REPO_DIR" --component main includedeb "$SUITE" "$deb"
 done
+
+reprepro --basedir "$REPO_DIR" deleteunreferenced
 
 # Binary keyring file, usable directly as Signed-By.
 gpg --batch --yes --export --output "${REPO_DIR}/picompose-archive-keyring.gpg"
