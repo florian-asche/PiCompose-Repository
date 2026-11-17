@@ -28,7 +28,7 @@ jobs:
           shellcheck scripts/*.sh
 
       - name: Python scripts
-        run: python3 -m py_compile scripts/*.py
+        run: python3 -m py_compile scripts/*.py && find scripts -name __pycache__ -prune -exec rm -rf {} +
 
       - name: YAML files
         run: |

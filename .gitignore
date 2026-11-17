@@ -6,3 +6,5 @@ debs/
 *.changes
 *.asc
 .vscode/
+__pycache__/
+*.pyc
