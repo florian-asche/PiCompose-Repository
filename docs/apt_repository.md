@@ -26,8 +26,9 @@ The repository serves packages for Debian `trixie` (Raspberry Pi OS based on tri
 3. Update and install:
    ```sh
    sudo apt update
-   sudo apt install picompose-hello
+   sudo apt install picompose-archive-keyring
    ```
+   The package `picompose-archive-keyring` takes over the key and the source file from here on, so the key can be renewed with a normal upgrade. dpkg asks whether to replace the source file you created. Answer yes, or use `-o Dpkg::Options::=--force-confnew` in scripts.
 
 Replace `trixie` with `trixie-nightly` to get builds from `main`, or with `trixie-test` for builds from the branch `test`. Nightly and test builds can break, so do not use them on devices you rely on.
 

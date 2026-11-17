@@ -1,0 +1,161 @@
+name: Build package
+
+# Reusable workflow for package repositories. A package repository calls it
+# from its own workflow:
+#
+#   jobs:
+#     package:
+#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-build.yml@main
+#       permissions:
+#         contents: write
+#       secrets:
+#         hub-token: ${{ secrets.HUB_DISPATCH_TOKEN }}
+#
+# Pushes to main build the nightly channel, pushes to the branch test the test
+# channel and version tags (<version> or v<version>) the stable channel. Pull
+# requests and other branches only build. The packages are attached to a GitHub
+# release of the package repository and the APT repository is told to publish them.
+
+on:
+  workflow_call:
+    secrets:
+      hub-token:
+        description: Token that may send repository_dispatch events to the APT repository
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Prepare build
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      channel: ${{ steps.channel.outputs.channel }}
+    steps:
+      - name: Checkout package repository
+        uses: actions/checkout@v4
+
+      - name: Checkout build scripts
+        uses: actions/checkout@v4
+        with:
+          repository: florian-asche/PiCompose-Repository
+          path: .picompose-repository
+
+      - name: Select channel
+        id: channel
+        run: |
+          channel=none
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+              channel=stable
+            elif [ "${GITHUB_REF_NAME}" = "main" ]; then
+              channel=nightly
+            elif [ "${GITHUB_REF_NAME}" = "test" ]; then
+              channel=test
+            fi
+          fi
+          echo "channel=${channel}" >> "${GITHUB_OUTPUT}"
+
+      - name: Compute matrix
+        id: matrix
+        run: |
+          tag=""
+          if [ "${{ steps.channel.outputs.channel }}" = "stable" ]; then
+            tag="--tag ${GITHUB_REF_NAME}"
+          fi
+          # shellcheck disable=SC2086
+          matrix="$(python3 .picompose-repository/scripts/arch-matrix.py . ${tag})"
+          echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
+          echo "${matrix}"
+
+  build:
+    name: Build (${{ matrix.arch }})
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - name: Checkout package repository
+        uses: actions/checkout@v4
+
+      - name: Checkout build scripts
+        uses: actions/checkout@v4
+        with:
+          repository: florian-asche/PiCompose-Repository
+          path: .picompose-repository
+
+      - name: Set up QEMU for 32-bit ARM
+        if: matrix.arch == 'armhf'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/arm/v7
+
+      - name: Build package
+        run: |
+          channel=""
+          case "${{ needs.prepare.outputs.channel }}" in
+            nightly) channel="--channel nightly" ;;
+            test) channel="--channel test" ;;
+          esac
+          # shellcheck disable=SC2086
+          ./.picompose-repository/scripts/build-package.sh . "${{ matrix.arch }}" ${channel} --out "${RUNNER_TEMP}/out"
+          mkdir out && cp "${RUNNER_TEMP}"/out/*.deb out/
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-${{ matrix.arch }}
+          path: out/*.deb
+          if-no-files-found: error
+
+  release:
+    name: Release and publish
+    needs: [prepare, build]
+    if: needs.prepare.outputs.channel != 'none'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      CHANNEL: ${{ needs.prepare.outputs.channel }}
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: deb-*
+          merge-multiple: true
+          path: debs
+
+      - name: Attach packages to a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${CHANNEL}" = "stable" ]; then
+            tag="${GITHUB_REF_NAME}"
+            gh release view "${tag}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1 \
+              || gh release create "${tag}" --repo "${GITHUB_REPOSITORY}" --verify-tag --generate-notes
+            gh release upload "${tag}" debs/*.deb --repo "${GITHUB_REPOSITORY}" --clobber
+          else
+            tag="${CHANNEL}"
+            gh release delete "${tag}" --repo "${GITHUB_REPOSITORY}" --cleanup-tag --yes || true
+            gh release create "${tag}" debs/*.deb --repo "${GITHUB_REPOSITORY}" --prerelease \
+              --target "${GITHUB_SHA}" --title "${CHANNEL} build" \
+              --notes "Automatic ${CHANNEL} build of ${GITHUB_SHA}. Replaced by every push."
+          fi
+          echo "TAG=${tag}" >> "${GITHUB_ENV}"
+
+      - name: Tell the APT repository to publish
+        env:
+          GH_TOKEN: ${{ secrets.hub-token }}
+        run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::The secret hub-token is not set, so the APT repository was not notified."
+            exit 1
+          fi
+          gh api repos/florian-asche/PiCompose-Repository/dispatches \
+            -f event_type=package-published \
+            -f "client_payload[repository]=${GITHUB_REPOSITORY}" \
+            -f "client_payload[channel]=${CHANNEL}" \
+            -f "client_payload[tag]=${TAG}"

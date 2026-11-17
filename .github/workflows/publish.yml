@@ -1,0 +1,104 @@
+name: Publish to APT repository
+
+# Runs when a package repository announces a release (see package-build.yml),
+# or by hand to publish a release again. The packages are downloaded from the
+# GitHub release of a repository that is listed in sources.yml, checked, signed
+# and added to the suite of the channel: stable to trixie, nightly to
+# trixie-nightly and test to trixie-test.
+
+on:
+  repository_dispatch:
+    types: [package-published]
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: Package repository, for example florian-asche/PiCompose-Package-Hello
+        required: true
+      channel:
+        description: Channel
+        required: true
+        type: choice
+        options:
+          - stable
+          - nightly
+          - test
+      tag:
+        description: Release tag (nightly or test for those channels)
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-24.04
+    environment: apt-publish
+    concurrency:
+      group: apt-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    env:
+      REPOSITORY: ${{ github.event.client_payload.repository || inputs.repository }}
+      CHANNEL: ${{ github.event.client_payload.channel || inputs.channel }}
+      TAG: ${{ github.event.client_payload.tag || inputs.tag }}
+    steps:
+      - name: Validate the request
+        run: |
+          [[ "${REPOSITORY}" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || { echo "::error::Invalid repository"; exit 1; }
+          [[ "${TAG}" =~ ^[A-Za-z0-9._+-]+$ ]] || { echo "::error::Invalid tag"; exit 1; }
+          case "${CHANNEL}" in
+            stable) [ "${TAG}" != nightly ] && [ "${TAG}" != test ] || { echo "::error::Tag ${TAG} is not a stable release"; exit 1; } ;;
+            nightly | test) [ "${TAG}" = "${CHANNEL}" ] || { echo "::error::Channel ${CHANNEL} needs the tag ${CHANNEL}"; exit 1; } ;;
+            *) echo "::error::Invalid channel"; exit 1 ;;
+          esac
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y reprepro python3-yaml
+
+      - name: Download and check packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${TAG}" --repo "${REPOSITORY}" --pattern '*.deb' --dir debs
+          python3 scripts/check-debs.py --repository "${REPOSITORY}" --channel "${CHANNEL}" --debs debs
+
+      - name: Import signing key
+        env:
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+        run: |
+          echo "${APT_GPG_PRIVATE_KEY}" | gpg --batch --import
+          gpg --list-secret-keys
+
+      - name: Check out the published repository
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            git clone --branch gh-pages --depth 1 "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" apt-repo
+          else
+            git init --initial-branch gh-pages apt-repo
+            git -C apt-repo remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          fi
+
+      - name: Add packages
+        env:
+          APT_DOMAIN: ${{ vars.APT_DOMAIN }}
+        run: |
+          case "${CHANNEL}" in
+            stable) suite=trixie ;;
+            nightly) suite=trixie-nightly ;;
+            test) suite=trixie-test ;;
+          esac
+          ./scripts/publish-apt.sh --suite "${suite}" --debs debs --repo apt-repo
+
+      - name: Push the published repository
+        run: |
+          cd apt-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git commit -m "Publish ${REPOSITORY} ${TAG}"
+          git push origin gh-pages

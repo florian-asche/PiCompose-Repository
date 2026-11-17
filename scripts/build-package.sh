@@ -1,20 +1,20 @@
 #!/bin/bash
 # Build one package for one architecture inside a clean debian:trixie container.
 #
-# Usage: scripts/build-package.sh <package> <arch> [--channel nightly|test] [--out <dir>]
-#   package   directory name below packages/
-#   arch      amd64, arm64 or armhf
-#   --channel build a pre-release: nightly gives <version>~git<date>.<sha>,
-#             test gives <version>~test<date>.<sha>. Without it the version is unchanged.
-#   --out     directory for the resulting .deb files (default: ./out)
+# Usage: scripts/build-package.sh <source-dir> <arch> [--channel nightly|test] [--out <dir>]
+#   source-dir  checkout of a package repository (the directory that contains debian/)
+#   arch        amd64, arm64 or armhf
+#   --channel   build a pre-release: nightly gives <version>~git<timestamp>.<sha>,
+#               test gives <version>~test<timestamp>.<sha>. Without it the version is unchanged.
+#   --out       directory for the resulting .deb files (default: ./out)
 set -euo pipefail
 
 if [ $# -lt 2 ]; then
-    sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'
     exit 1
 fi
 
-PACKAGE="$1"
+SOURCE_DIR="$1"
 ARCH="$2"
 shift 2
 
@@ -35,11 +35,11 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-if [ ! -f "${ROOT_DIR}/packages/${PACKAGE}/debian/control" ]; then
-    echo "Package not found: packages/${PACKAGE}" >&2
+if [ ! -f "${SOURCE_DIR}/debian/control" ]; then
+    echo "No debian/control in ${SOURCE_DIR}" >&2
     exit 1
 fi
+SOURCE_DIR="$(cd "$SOURCE_DIR" && pwd)"
 
 case "$ARCH" in
     amd64) PLATFORM="linux/amd64" ;;
@@ -50,10 +50,10 @@ esac
 
 mkdir -p "$OUT_DIR"
 OUT_DIR="$(cd "$OUT_DIR" && pwd)"
-SHORT_SHA="$(git -C "$ROOT_DIR" rev-parse --short=7 HEAD 2>/dev/null || echo unknown)"
+SHORT_SHA="$(git -C "$SOURCE_DIR" rev-parse --short=7 HEAD 2>/dev/null || echo unknown)"
 
 docker run --rm --platform "$PLATFORM" \
-    -v "${ROOT_DIR}/packages/${PACKAGE}:/src:ro" \
+    -v "${SOURCE_DIR}:/src:ro" \
     -v "${OUT_DIR}:/out" \
     -e "ARCH=${ARCH}" \
     -e "SNAPSHOT_LABEL=${SNAPSHOT_LABEL}" \
@@ -74,7 +74,7 @@ docker run --rm --platform "$PLATFORM" \
             BASE_VERSION="$(dpkg-parsechangelog -S Version)"
             DEBFULLNAME="PiCompose CI" DEBEMAIL="github@florian-asche.de" \
                 dch --force-bad-version --force-distribution --distribution trixie --newversion \
-                "${BASE_VERSION}~${SNAPSHOT_LABEL}$(date -u +%Y%m%d).${SHORT_SHA}" "Pre-release build."
+                "${BASE_VERSION}~${SNAPSHOT_LABEL}$(date -u +%Y%m%d%H%M%S).${SHORT_SHA}" "Pre-release build."
         fi
 
         dpkg-buildpackage -us -uc -b

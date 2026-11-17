@@ -42,7 +42,7 @@ gpg --armor --export-secret-subkeys '<SUBKEY-ID>!' > signing-subkey.asc
 
 ## 3. Set up GitHub
 
-In the repository settings (Settings, Environments) create the environment `apt-publish`. Under "Deployment branches and tags" restrict it to `main` and to tags. Then add the secret `APT_GPG_PRIVATE_KEY` to that environment and paste the whole content of `signing-subkey.asc`, including the `BEGIN` and `END` lines.
+In the repository settings (Settings, Environments) create the environment `apt-publish`. Under "Deployment branches and tags" restrict it to `main`, because the publish workflow always runs on the default branch. Then add the secret `APT_GPG_PRIVATE_KEY` to that environment and paste the whole content of `signing-subkey.asc`, including the `BEGIN` and `END` lines.
 
 With the GitHub CLI:
 
@@ -60,7 +60,7 @@ The subkey expires after two years. To renew it:
 1. Import the master key into a temporary keyring.
 2. Extend the subkey: `gpg --edit-key <FINGERPRINT>`, then `key 1`, `expire`, `save`.
 3. Export the subkey again (step 1) and replace the secret `APT_GPG_PRIVATE_KEY`.
-4. Roll out the updated `picompose-archive-keyring.gpg` to devices **before** the old expiry date. Devices keep the old public key with the old expiry date, so they stop trusting the repository once it has passed. The planned `picompose-archive-keyring` package is the way to deliver this.
+4. Roll out the updated `picompose-archive-keyring.gpg` to devices **before** the old expiry date. Devices keep the old public key with the old expiry date, so they stop trusting the repository once it has passed. The package `picompose-archive-keyring` ([PiCompose-Package-Archive-Keyring](https://github.com/florian-asche/PiCompose-Package-Archive-Keyring)) is the way to deliver this.
 
 Put the expiry date in a calendar.
 

@@ -1,0 +1,9 @@
+# Package repositories that may publish to this APT repository.
+# The publish workflow refuses everything that is not listed here.
+repositories:
+  florian-asche/PiCompose-Package-Hello:
+    packages:
+      - picompose-hello
+  florian-asche/PiCompose-Package-Archive-Keyring:
+    packages:
+      - picompose-archive-keyring

@@ -34,8 +34,8 @@ actually ran, for example the hardware and package version, or "built and linted
 
 ## Checklist
 
-- [ ] The package builds with `./scripts/build-package.sh <package> <arch>` and passes lintian.
-- [ ] `debian/changelog` has a new version for every changed package.
+- [ ] `shellcheck scripts/*.sh` and `yamllint .github/workflows` pass.
+- [ ] A change to a script or to `package-build.yml` was tried with a package repository, for example `PiCompose-Package-Hello`.
 - [ ] `README.md` and `docs/` match the change.
 - [ ] Breaking changes (renamed packages, changed config paths, changed dependencies) are described in the PR.
 - [ ] I reviewed and understand every change in this PR (see [AI policy](AI_POLICY.md)).
