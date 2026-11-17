@@ -1,0 +1,8 @@
+out/
+apt-repo/
+debs/
+*.deb
+*.buildinfo
+*.changes
+*.asc
+.vscode/

@@ -1,0 +1,169 @@
+name: Build and publish packages
+
+on:
+  push:
+    branches:
+      - main
+      - test
+    tags:
+      - '*/*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Prepare build matrix
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      has_packages: ${{ steps.matrix.outputs.has_packages }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute matrix
+        id: matrix
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            matrix="$(python3 scripts/build-matrix.py --tag "${GITHUB_REF_NAME}")"
+          elif [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            matrix="$(python3 scripts/build-matrix.py --base "${{ github.event.pull_request.base.sha }}")"
+          elif [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            matrix="$(python3 scripts/build-matrix.py --base "${{ github.event.before }}")"
+          else
+            matrix="$(python3 scripts/build-matrix.py --all)"
+          fi
+          echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
+          if [ "${matrix}" = '{"include": []}' ]; then
+            echo "has_packages=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "has_packages=true" >> "${GITHUB_OUTPUT}"
+          fi
+          echo "${matrix}"
+
+  lint:
+    name: Lint scripts and workflows
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install linters
+        run: sudo apt-get update && sudo apt-get install -y shellcheck yamllint
+
+      - name: Shell scripts
+        run: |
+          bash -n scripts/*.sh
+          shellcheck scripts/*.sh
+
+      - name: Workflow YAML
+        run: |
+          yamllint -d "{extends: relaxed, rules: {line-length: disable}}" .github/workflows
+
+  build:
+    name: Build ${{ matrix.package }} (${{ matrix.arch }})
+    needs: prepare
+    if: needs.prepare.outputs.has_packages == 'true'
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU for 32-bit ARM
+        if: matrix.arch == 'armhf'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/arm/v7
+
+      - name: Build package
+        run: |
+          channel=""
+          if [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF_TYPE}" = "branch" ]; then
+            if [ "${GITHUB_REF_NAME}" = "test" ]; then
+              channel="--channel test"
+            else
+              channel="--channel nightly"
+            fi
+          fi
+          # shellcheck disable=SC2086
+          ./scripts/build-package.sh "${{ matrix.package }}" "${{ matrix.arch }}" ${channel} --out out
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-${{ matrix.package }}-${{ matrix.arch }}
+          path: out/*.deb
+          if-no-files-found: error
+
+  publish:
+    name: Publish to APT repository
+    needs: [lint, build]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    environment: apt-publish
+    concurrency:
+      group: apt-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: deb-*
+          merge-multiple: true
+          path: debs
+
+      - name: Install reprepro
+        run: sudo apt-get update && sudo apt-get install -y reprepro
+
+      - name: Import signing key
+        env:
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+        run: |
+          echo "${APT_GPG_PRIVATE_KEY}" | gpg --batch --import
+          gpg --list-secret-keys
+
+      - name: Check out the published repository
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            git clone --branch gh-pages --depth 1 "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" apt-repo
+          else
+            git init --initial-branch gh-pages apt-repo
+            git -C apt-repo remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          fi
+
+      - name: Add packages
+        env:
+          APT_DOMAIN: ${{ vars.APT_DOMAIN }}
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            suite="trixie"
+          elif [ "${GITHUB_REF_NAME}" = "test" ]; then
+            suite="trixie-test"
+          else
+            suite="trixie-nightly"
+          fi
+          ./scripts/publish-apt.sh --suite "${suite}" --debs debs --repo apt-repo
+
+      - name: Push the published repository
+        run: |
+          cd apt-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git commit -m "Publish ${GITHUB_REF_NAME} (${GITHUB_SHA::7})"
+          git push origin gh-pages
