@@ -1,10 +1,10 @@
 name: Publish to APT repository
 
-# Started by a package repository after it released packages (see
-# package-build.yml), or by hand to publish a release again. The packages are downloaded from the
-# GitHub release of a repository that is listed in sources.yml, checked, signed
-# and added to the suite of the channel: stable to trixie and nightly to
-# trixie-nightly.
+# Started by a package repository after it built packages (see package-build.yml), or
+# by hand to publish a build again. The packages are the artifacts of a workflow run of
+# a repository that is listed in sources.yml. The run has to be a build of main (nightly)
+# or a release (stable) of that repository itself. The packages are checked, signed and
+# added to the suite of the channel: stable to trixie and nightly to trixie-nightly.
 
 on:
   workflow_dispatch:
@@ -19,8 +19,8 @@ on:
         options:
           - stable
           - nightly
-      tag:
-        description: Release tag (nightly for the channel nightly)
+      run_id:
+        description: ID of the workflow run of the package repository that built the packages
         required: true
 
 permissions:
@@ -39,17 +39,26 @@ jobs:
     env:
       REPOSITORY: ${{ inputs.repository }}
       CHANNEL: ${{ inputs.channel }}
-      TAG: ${{ inputs.tag }}
+      RUN_ID: ${{ inputs.run_id }}
     steps:
       - name: Validate the request
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           [[ "${REPOSITORY}" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || { echo "::error::Invalid repository"; exit 1; }
-          [[ "${TAG}" =~ ^[A-Za-z0-9._+-]+$ ]] || { echo "::error::Invalid tag"; exit 1; }
+          [[ "${RUN_ID}" =~ ^[0-9]+$ ]] || { echo "::error::Invalid run ID"; exit 1; }
+          run="$(gh api "repos/${REPOSITORY}/actions/runs/${RUN_ID}")"
+          read -r head_repository head_branch event path conclusion < <(jq -r '[.head_repository.full_name, .head_branch, .event, (.path | split("@")[0]), (.conclusion // "none")] | @tsv' <<< "${run}")
           case "${CHANNEL}" in
-            stable) [ "${TAG}" != nightly ] || { echo "::error::Tag ${TAG} is not a stable release"; exit 1; } ;;
-            nightly) [ "${TAG}" = nightly ] || { echo "::error::Channel nightly needs the tag nightly"; exit 1; } ;;
+            nightly) expected_event=push; expected_path=.github/workflows/build.yml ;;
+            stable) expected_event=workflow_dispatch; expected_path=.github/workflows/release.yml ;;
             *) echo "::error::Invalid channel"; exit 1 ;;
           esac
+          if [ "${head_repository}" != "${REPOSITORY}" ] || [ "${head_branch}" != main ] || [ "${event}" != "${expected_event}" ] \
+            || [ "${path}" != "${expected_path}" ] || [ "${conclusion}" = failure ] || [ "${conclusion}" = cancelled ]; then
+            echo "::error::Run ${RUN_ID} is not a ${CHANNEL} build of main of ${REPOSITORY}: ${head_repository} ${head_branch} ${event} ${path} ${conclusion}"
+            exit 1
+          fi
 
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -61,7 +70,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download "${TAG}" --repo "${REPOSITORY}" --pattern '*.deb' --dir debs
+          gh run download "${RUN_ID}" --repo "${REPOSITORY}" --pattern 'deb-*' --dir downloaded
+          mkdir debs
+          find downloaded -name '*.deb' -exec mv {} debs/ \;
           python3 scripts/check-debs.py --repository "${REPOSITORY}" --channel "${CHANNEL}" --debs debs
 
       - name: Import signing key
@@ -96,5 +107,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add --all
-          git commit -m "Publish ${REPOSITORY} ${TAG}"
+          git commit -m "Publish ${REPOSITORY} ${CHANNEL} run ${RUN_ID}"
           git push origin gh-pages

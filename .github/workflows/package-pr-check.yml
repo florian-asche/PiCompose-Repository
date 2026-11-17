@@ -1,0 +1,67 @@
+name: Check pull request
+
+# Reusable workflow for package repositories: a pull request needs exactly one of the
+# labels major, minor and patch, which decides how the version is raised when it is
+# merged. Make the check required in the branch protection of main.
+#
+#   on:
+#     pull_request_target:
+#       types: [opened, edited, reopened, synchronize, labeled, unlabeled]
+#       branches: [main]
+#   jobs:
+#     check:
+#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-pr-check.yml@main
+#       permissions:
+#         pull-requests: write
+#         issues: write
+#
+# The label can be set by hand or by ticking one box with the name in backticks in the
+# description of the pull request. Pull requests of bots (Dependabot) get patch.
+# The workflow reads only the event, it never checks out the code of the pull request.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Version label
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_BODY: ${{ github.event.pull_request.body }}
+      PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+      PR_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+    steps:
+      - name: Check the label
+        run: |
+          levels='^(major|minor|patch)$'
+          labels="$(jq -r '.[]' <<< "${PR_LABELS}" | grep -E "${levels}" || true)"
+          count="$(grep -c . <<< "${labels}" || true)"
+
+          if [ "${count}" = 0 ]; then
+            ticked="$(grep -iE '^[[:space:]]*-[[:space:]]*\[x\][^`]*`(major|minor|patch)`' <<< "${PR_BODY}" | grep -oE '`(major|minor|patch)`' | tr -d '`' | sort -u || true)"
+            if [ "${PR_AUTHOR_TYPE}" = "Bot" ]; then
+              ticked=patch
+            fi
+            if [ "$(grep -c . <<< "${ticked}" || true)" = 1 ]; then
+              gh label create "${ticked}" --repo "${GITHUB_REPOSITORY}" --force >/dev/null
+              gh pr edit "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" --add-label "${ticked}"
+              echo "Added the label ${ticked}."
+              exit 0
+            fi
+            echo "::error::Add exactly one of the labels major, minor or patch, or tick exactly one box under 'Version bump' in the description."
+            exit 1
+          fi
+
+          if [ "${count}" != 1 ]; then
+            echo "::error::More than one version label: $(tr '\n' ' ' <<< "${labels}"). Keep exactly one."
+            exit 1
+          fi
+          echo "Version label: ${labels}"

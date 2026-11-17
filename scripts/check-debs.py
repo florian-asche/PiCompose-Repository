@@ -6,8 +6,7 @@ Usage: check-debs.py --repository <owner/name> --channel <stable|nightly> --debs
 
 Fails unless the repository is listed in sources.yml, every package name is one
 of the packages listed for it, the architecture is supported and the version
-matches the channel and is the same for all architectures of a package: nightly versions contain +git and
-stable versions neither ~ nor +git.
+is a plain release version (no ~, +git or +dev) that is the same for all architectures of a package.
 """
 import argparse
 import subprocess
@@ -17,7 +16,7 @@ from pathlib import Path
 import yaml
 
 ARCHITECTURES = {"amd64", "arm64", "armhf", "all"}
-VERSION_MARKERS = {"stable": None, "nightly": "+git"}
+CHANNELS = ("stable", "nightly")
 
 
 def deb_field(deb: Path, field: str) -> str:
@@ -32,7 +31,7 @@ def deb_field(deb: Path, field: str) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--repository", required=True)
-    parser.add_argument("--channel", required=True, choices=sorted(VERSION_MARKERS))
+    parser.add_argument("--channel", required=True, choices=CHANNELS)
     parser.add_argument("--debs", required=True, type=Path)
     parser.add_argument("--sources", type=Path, default=Path(__file__).resolve().parent.parent / "sources.yml")
     args = parser.parse_args()
@@ -48,17 +47,14 @@ def main() -> None:
 
     errors = []
     versions: dict[str, set[str]] = {}
-    marker = VERSION_MARKERS[args.channel]
     for deb in debs:
         name, version, arch = (deb_field(deb, field) for field in ("Package", "Version", "Architecture"))
         if name not in packages:
             errors.append(f"{deb.name}: package {name} is not allowed for {args.repository}")
         if arch not in ARCHITECTURES:
             errors.append(f"{deb.name}: unsupported architecture {arch}")
-        if marker is None and ("~" in version or "+git" in version or "+dev" in version):
-            errors.append(f"{deb.name}: version {version} is not a stable release")
-        if marker is not None and marker not in version:
-            errors.append(f"{deb.name}: version {version} does not contain {marker}")
+        if "~" in version or "+git" in version or "+dev" in version:
+            errors.append(f"{deb.name}: version {version} is not a plain release version")
         versions.setdefault(name, set()).add(version)
         print(f"{deb.name}: {name} {version} {arch}")
     for name, found in versions.items():
