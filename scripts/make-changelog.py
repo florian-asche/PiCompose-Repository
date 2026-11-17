@@ -6,6 +6,7 @@ Usage: make-changelog.py <source-dir> --version <version> --notes-file <file> [-
 
 The package name and the maintainer come from debian/control. Lines of the
 notes become changelog items: Markdown bullets lose their marks, headings,
+HTML comments,
 empty lines and the "Full Changelog" line GitHub adds are dropped.
 """
 import argparse
@@ -24,7 +25,7 @@ def notes_to_items(notes: str, version: str) -> list[str]:
     """
     items = []
     for line in notes.splitlines():
-        if line.lstrip().startswith("#"):
+        if line.lstrip().startswith(("#", "<!--")):
             continue
         line = re.sub(r"^\s*[*+-]\s+", "", line).strip()
         line = re.sub(r"[^\S ]|[\x00-\x1f]", " ", line)
