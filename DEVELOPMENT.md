@@ -22,7 +22,7 @@ PiCompose-Package-<Name>                   PiCompose-Repository
                                              5. check, sign, add to the suite
 ```
 
-The package repository never sees the signing key. The call only says which repository, channel and workflow run to publish. `publish.yml` downloads the packages itself from the artifacts of that run, and only if the repository is listed in `sources.yml`, the run is a build of `main` of that repository itself (nightly) or a release (stable), the package names are the listed ones and the version is a plain release version. A leaked token can therefore only publish builds of `main` that exist already.
+The package repository never sees the signing key. The call only says which repository, channel and workflow run to publish. `publish.yml` downloads the packages itself from the artifacts of that run, and only if the repository is listed in `sources.yml`, the run is a build of `main` of that repository itself (trixie-nightly) or a release (stable), the package names are the listed ones and the version is a plain release version. A leaked token can therefore only publish builds of `main` that exist already.
 
 **The version belongs to the package.** It is the first entry of `debian/changelog` in the package repository.
 

@@ -2,7 +2,7 @@
 """
 Check .deb files downloaded from a package repository before they are signed and published.
 
-Usage: check-debs.py --repository <owner/name> --channel <stable|nightly> --debs <dir> [--sources <file>]
+Usage: check-debs.py --repository <owner/name> --channel <stable|trixie-nightly> --debs <dir> [--sources <file>]
 
 Fails unless the repository is listed in sources.yml, every package name is one
 of the packages listed for it, the architecture is supported and the version
@@ -16,7 +16,7 @@ from pathlib import Path
 import yaml
 
 ARCHITECTURES = {"amd64", "arm64", "armhf", "all"}
-CHANNELS = ("stable", "nightly")
+CHANNELS = ("stable", "trixie-nightly")
 
 
 def deb_field(deb: Path, field: str) -> str:

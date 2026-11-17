@@ -35,7 +35,7 @@ on:
   workflow_call:
     inputs:
       release-version:
-        description: Version of the release to build (channel stable), empty for nightly and dev
+        description: Version of the release to build (channel stable), empty for trixie-nightly and dev
         type: string
         default: ''
     secrets:
@@ -67,14 +67,14 @@ jobs:
           if [ -n "${{ inputs.release-version }}" ]; then
             channel=stable
           elif [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF_NAME}" = "main" ]; then
-            channel=nightly
+            channel=trixie-nightly
           fi
           echo "channel=${channel}" >> "${GITHUB_OUTPUT}"
 
       - name: Checkout package repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release-version != '' && format('v{0}', inputs.release-version) || (steps.channel.outputs.channel == 'nightly' && 'main' || '') }}
+          ref: ${{ inputs.release-version != '' && format('v{0}', inputs.release-version) || (steps.channel.outputs.channel == 'trixie-nightly' && 'main' || '') }}
           fetch-depth: 0
 
       - name: Checkout build scripts
@@ -104,7 +104,7 @@ jobs:
             fi
             version="${RELEASE_VERSION}"
             ref="v${RELEASE_VERSION}"
-          elif [ "${CHANNEL}" = "nightly" ]; then
+          elif [ "${CHANNEL}" = "trixie-nightly" ]; then
             version="$(python3 "${scripts}/package-version.py" bump --repository "${GITHUB_REPOSITORY}" --notes-file "${notes}")"
             if [ -z "${version}" ]; then
               echo "No new commits since the last version, nothing to build."
@@ -208,7 +208,7 @@ jobs:
   publish:
     name: Publish
     needs: [prepare, build]
-    if: needs.prepare.outputs.skip != 'true' && (needs.prepare.outputs.channel == 'stable' || needs.prepare.outputs.channel == 'nightly')
+    if: needs.prepare.outputs.skip != 'true' && (needs.prepare.outputs.channel == 'stable' || needs.prepare.outputs.channel == 'trixie-nightly')
     runs-on: ubuntu-24.04
     permissions:
       contents: write

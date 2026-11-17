@@ -6,7 +6,7 @@ name: Publish to APT repository
 # tag of that repository itself: of a pre-release for nightly, of a release for stable.
 # Runs of the previous flow (package-build.yml on main, package-release.yml) are still
 # accepted. The packages are checked, signed and added to the suite of the channel:
-# stable to trixie and nightly to trixie-nightly.
+# stable to trixie and trixie-nightly to trixie-nightly.
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ on:
         type: choice
         options:
           - stable
-          - nightly
+          - trixie-nightly
       run_id:
         description: ID of the workflow run of the package repository that built the packages
         required: true
@@ -56,18 +56,18 @@ jobs:
             exit 1
           fi
           if [[ "${head_branch}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            # Build of a tag: a pre-release for nightly, a release for stable.
+            # Build of a tag: a pre-release for trixie-nightly, a release for stable.
             prerelease="$(gh api "repos/${REPOSITORY}/releases/tags/${head_branch}" -q .prerelease)"
             case "${CHANNEL}" in
-              nightly) ok=$([ "${event}" = workflow_dispatch ] && [ "${prerelease}" = true ] && echo yes || echo no) ;;
+              trixie-nightly) ok=$([ "${event}" = workflow_dispatch ] && [ "${prerelease}" = true ] && echo yes || echo no) ;;
               stable) ok=$([ "${event}" = release ] && [ "${prerelease}" = false ] && echo yes || echo no) ;;
               *) ok=no ;;
             esac
             [ "${path}" = .github/workflows/tag-build.yml ] || ok=no
           else
-            # Previous flow: build of main (nightly) or release workflow (stable).
+            # Previous flow: build of main (trixie-nightly) or release workflow (stable).
             case "${CHANNEL}" in
-              nightly) [ "${head_branch}" = main ] && [ "${event}" = push ] && [ "${path}" = .github/workflows/build.yml ] && ok=yes || ok=no ;;
+              trixie-nightly) [ "${head_branch}" = main ] && [ "${event}" = push ] && [ "${path}" = .github/workflows/build.yml ] && ok=yes || ok=no ;;
               stable) [ "${head_branch}" = main ] && [ "${event}" = workflow_dispatch ] && [ "${path}" = .github/workflows/release.yml ] && ok=yes || ok=no ;;
               *) ok=no ;;
             esac

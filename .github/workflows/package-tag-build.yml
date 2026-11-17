@@ -49,7 +49,7 @@ jobs:
             echo "::error::This workflow has to run on a tag, not on ${GITHUB_REF}."
             exit 1
           fi
-          channel=nightly
+          channel=trixie-nightly
           if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
             channel=stable
           fi
