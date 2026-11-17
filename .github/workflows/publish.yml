@@ -1,14 +1,12 @@
 name: Publish to APT repository
 
-# Runs when a package repository announces a release (see package-build.yml),
-# or by hand to publish a release again. The packages are downloaded from the
+# Started by a package repository after it released packages (see
+# package-build.yml), or by hand to publish a release again. The packages are downloaded from the
 # GitHub release of a repository that is listed in sources.yml, checked, signed
 # and added to the suite of the channel: stable to trixie and nightly to
 # trixie-nightly.
 
 on:
-  repository_dispatch:
-    types: [package-published]
   workflow_dispatch:
     inputs:
       repository:
@@ -39,9 +37,9 @@ jobs:
     permissions:
       contents: write
     env:
-      REPOSITORY: ${{ github.event.client_payload.repository || inputs.repository }}
-      CHANNEL: ${{ github.event.client_payload.channel || inputs.channel }}
-      TAG: ${{ github.event.client_payload.tag || inputs.tag }}
+      REPOSITORY: ${{ inputs.repository }}
+      CHANNEL: ${{ inputs.channel }}
+      TAG: ${{ inputs.tag }}
     steps:
       - name: Validate the request
         run: |

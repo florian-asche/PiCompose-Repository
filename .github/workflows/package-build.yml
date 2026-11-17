@@ -31,7 +31,7 @@ on:
   workflow_call:
     secrets:
       hub-token:
-        description: Token that may send repository_dispatch events to the APT repository
+        description: Token that may start workflows of the APT repository (Actions, read and write)
         required: false
 
 permissions:
@@ -206,8 +206,5 @@ jobs:
             echo "::error::The secret hub-token is not set, so the APT repository was not notified."
             exit 1
           fi
-          gh api repos/florian-asche/PiCompose-Repository/dispatches \
-            -f event_type=package-published \
-            -f "client_payload[repository]=${GITHUB_REPOSITORY}" \
-            -f "client_payload[channel]=${CHANNEL}" \
-            -f "client_payload[tag]=${TAG}"
+          gh workflow run publish.yml --repo florian-asche/PiCompose-Repository --ref main \
+            -f "repository=${GITHUB_REPOSITORY}" -f "channel=${CHANNEL}" -f "tag=${TAG}"

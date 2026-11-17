@@ -18,7 +18,7 @@ PiCompose-Package-<Name>                   PiCompose-Repository
         |                                    publish.yml         check, sign, publish
         | 1. build in a container            apt/conf/           suites and architectures
         | 2. attach .deb to a release        gh-pages branch     the APT repository
-        | 3. repository_dispatch  ---------> 4. download .deb from the release
+        | 3. start publish.yml  -----------> 4. download .deb from the release
                                              5. check, sign, add to the suite
 ```
 
@@ -55,7 +55,7 @@ scripts/
 docs/                   documentation
 .github/workflows/
   package-build.yml     reusable build workflow, called by the package repositories
-  publish.yml           publish workflow, started by the dispatch of a package repository
+  publish.yml           publish workflow, started by a package repository after a release
   ci.yml                lint of this repository
 ```
 
@@ -89,7 +89,7 @@ Other architectures run through QEMU emulation when your host is not that archit
 
 ## Dispatch token
 
-The package repository tells this repository to publish with a `repository_dispatch` event, which needs a token with write access to this repository. Create a fine-grained personal access token for the owner `florian-asche`, restricted to the repository `PiCompose-Repository` with the permission "Contents: Read and write", and store it as the secret `HUB_DISPATCH_TOKEN` in every package repository:
+The package repository tells this repository to publish by starting the workflow `publish.yml` (`workflow_dispatch`), which needs a token that may run workflows of this repository. Create a fine-grained personal access token for the owner `florian-asche`, restricted to the repository `PiCompose-Repository` with the permission "Actions: Read and write" and nothing else, so it cannot change any code, and store it as the secret `HUB_DISPATCH_TOKEN` in every package repository:
 
 ```bash
 gh secret set HUB_DISPATCH_TOKEN --repo florian-asche/PiCompose-Package-Hello
