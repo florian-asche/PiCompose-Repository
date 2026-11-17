@@ -1,10 +1,12 @@
 name: Publish to APT repository
 
-# Started by a package repository after it built packages (see package-build.yml), or
-# by hand to publish a build again. The packages are the artifacts of a workflow run of
-# a repository that is listed in sources.yml. The run has to be a build of main (nightly)
-# or a release (stable) of that repository itself. The packages are checked, signed and
-# added to the suite of the channel: stable to trixie and nightly to trixie-nightly.
+# Started by a package repository after it built packages (see package-tag-build.yml),
+# or by hand to publish a build again. The packages are the artifacts of a workflow run
+# of a repository that is listed in sources.yml. The run has to be a build of a version
+# tag of that repository itself: of a pre-release for nightly, of a release for stable.
+# Runs of the previous flow (package-build.yml on main, package-release.yml) are still
+# accepted. The packages are checked, signed and added to the suite of the channel:
+# stable to trixie and nightly to trixie-nightly.
 
 on:
   workflow_dispatch:
@@ -49,14 +51,29 @@ jobs:
           [[ "${RUN_ID}" =~ ^[0-9]+$ ]] || { echo "::error::Invalid run ID"; exit 1; }
           run="$(gh api "repos/${REPOSITORY}/actions/runs/${RUN_ID}")"
           read -r head_repository head_branch event path conclusion < <(jq -r '[.head_repository.full_name, .head_branch, .event, (.path | split("@")[0]), (.conclusion // "none")] | @tsv' <<< "${run}")
-          case "${CHANNEL}" in
-            nightly) expected_event=push; expected_path=.github/workflows/build.yml ;;
-            stable) expected_event=workflow_dispatch; expected_path=.github/workflows/release.yml ;;
-            *) echo "::error::Invalid channel"; exit 1 ;;
-          esac
-          if [ "${head_repository}" != "${REPOSITORY}" ] || [ "${head_branch}" != main ] || [ "${event}" != "${expected_event}" ] \
-            || [ "${path}" != "${expected_path}" ] || [ "${conclusion}" = failure ] || [ "${conclusion}" = cancelled ]; then
-            echo "::error::Run ${RUN_ID} is not a ${CHANNEL} build of main of ${REPOSITORY}: ${head_repository} ${head_branch} ${event} ${path} ${conclusion}"
+          if [ "${head_repository}" != "${REPOSITORY}" ] || [ "${conclusion}" = failure ] || [ "${conclusion}" = cancelled ]; then
+            echo "::error::Run ${RUN_ID} is not a successful run of ${REPOSITORY}: ${head_repository} ${conclusion}"
+            exit 1
+          fi
+          if [[ "${head_branch}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            # Build of a tag: a pre-release for nightly, a release for stable.
+            prerelease="$(gh api "repos/${REPOSITORY}/releases/tags/${head_branch}" -q .prerelease)"
+            case "${CHANNEL}" in
+              nightly) ok=$([ "${event}" = workflow_dispatch ] && [ "${prerelease}" = true ] && echo yes || echo no) ;;
+              stable) ok=$([ "${event}" = release ] && [ "${prerelease}" = false ] && echo yes || echo no) ;;
+              *) ok=no ;;
+            esac
+            [ "${path}" = .github/workflows/tag-build.yml ] || ok=no
+          else
+            # Previous flow: build of main (nightly) or release workflow (stable).
+            case "${CHANNEL}" in
+              nightly) [ "${head_branch}" = main ] && [ "${event}" = push ] && [ "${path}" = .github/workflows/build.yml ] && ok=yes || ok=no ;;
+              stable) [ "${head_branch}" = main ] && [ "${event}" = workflow_dispatch ] && [ "${path}" = .github/workflows/release.yml ] && ok=yes || ok=no ;;
+              *) ok=no ;;
+            esac
+          fi
+          if [ "${ok}" != yes ]; then
+            echo "::error::Run ${RUN_ID} is not a ${CHANNEL} build of ${REPOSITORY}: ${head_branch} ${event} ${path}"
             exit 1
           fi
 

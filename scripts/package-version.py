@@ -2,7 +2,7 @@
 """
 Compute versions of a package repository from debian/changelog and merged pull requests.
 
-Usage: package-version.py bump --repository <owner/name> --notes-file <file> [--source <dir>]
+Usage: package-version.py bump --repository <owner/name> --notes-file <file> [--strict | --level <level>] [--source <dir>]
        package-version.py dev --stamp <timestamp> --sha <sha> [--source <dir>]
 
 The version of the package is the first entry of debian/changelog.
@@ -13,6 +13,9 @@ bump: the next version after merges to main. The commits since the last commit t
       which part is raised (patch if there is no label or no pull request). The new
       version is printed and the changelog items (pull request titles) are written
       to the notes file. Nothing is printed if there are no new commits.
+      With --strict every commit has to belong to a merged pull request that has exactly
+      one of the labels, otherwise the command fails and lists the offenders. With
+      --level the given part is raised and labels are not looked at.
 dev:  <version>+dev<stamp>.<sha> for builds of other branches. It sorts above the
       last release and installs as an upgrade of it.
 """
@@ -59,21 +62,24 @@ def merged_pull_requests(sha: str, repository: str) -> list[dict]:
     return [pull for pull in json.loads(result.stdout or "[]") if pull.get("merged_at")]
 
 
-def bump(source: Path, repository: str, notes_file: Path) -> None:
+def bump(source: Path, repository: str, notes_file: Path, strict: bool, forced_level: str | None) -> None:
     """
     Print the next version and write the changelog items.
     :param source: Directory of the git repository.
     :param repository: owner/name of the repository.
     :param notes_file: File that receives one changelog item per line.
+    :param strict: Fail for commits without a merged pull request and pull requests without exactly one label.
+    :param forced_level: Part to raise instead of the labels, or None.
     """
     last = git(source, "log", "-1", "--format=%H", "--", "debian/changelog").strip()
     commits = git(source, "rev-list", "--reverse", f"{last}..HEAD" if last else "HEAD").split()
     if not commits:
         return
 
-    level = len(LEVELS) - 1
+    level = LEVELS.index(forced_level) if forced_level else len(LEVELS) - 1
     items: list[str] = []
     seen: set[int] = set()
+    problems: list[str] = []
     for sha in commits:
         pulls = merged_pull_requests(sha, repository)
         for pull in pulls:
@@ -81,13 +87,20 @@ def bump(source: Path, repository: str, notes_file: Path) -> None:
                 continue
             seen.add(pull["number"])
             items.append(f"{pull['title']} (#{pull['number']})")
-            for label in pull.get("labels", []):
-                if label["name"] in LEVELS:
-                    level = min(level, LEVELS.index(label["name"]))
+            found = [label["name"] for label in pull.get("labels", []) if label["name"] in LEVELS]
+            if strict and not forced_level and len(found) != 1:
+                problems.append(f"Pull request #{pull['number']} '{pull['title']}' has {len(found)} version labels instead of one")
+            if not forced_level:
+                for name in found:
+                    level = min(level, LEVELS.index(name))
         if not pulls:
             subject = git(source, "log", "-1", "--format=%s", sha).strip()
+            if strict and not forced_level:
+                problems.append(f"Commit {sha[:7]} '{subject}' does not belong to a merged pull request")
             if subject and not subject.startswith("Merge "):
                 items.append(subject)
+    if problems:
+        sys.exit("Cannot raise the version:\n" + "\n".join(problems) + "\nFix the labels, or start the workflow by hand and choose the level.")
 
     major, minor, patch = (int(part) for part in re.match(r"^(\d+)\.(\d+)\.(\d+)", changelog_version(source)).groups())  # type: ignore[union-attr]
     if LEVELS[level] == "major":
@@ -107,13 +120,15 @@ def main() -> None:
     bump_parser = sub.add_parser("bump")
     bump_parser.add_argument("--repository", required=True)
     bump_parser.add_argument("--notes-file", type=Path, required=True)
+    bump_parser.add_argument("--strict", action="store_true")
+    bump_parser.add_argument("--level", choices=LEVELS)
     dev_parser = sub.add_parser("dev")
     dev_parser.add_argument("--stamp", required=True)
     dev_parser.add_argument("--sha", required=True)
     args = parser.parse_args()
 
     if args.command == "bump":
-        bump(args.source, args.repository, args.notes_file)
+        bump(args.source, args.repository, args.notes_file, args.strict, args.level)
     else:
         print(f"{changelog_version(args.source)}+dev{args.stamp}.{args.sha}")
 

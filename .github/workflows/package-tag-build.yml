@@ -1,0 +1,162 @@
+name: Build package from a tag
+
+# Reusable workflow for package repositories. It builds the version of a tag and has it
+# published to the APT repository:
+#
+#   on:
+#     workflow_dispatch:
+#     release:
+#       types: [released]
+#   jobs:
+#     package:
+#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-tag-build.yml@main
+#       permissions:
+#         contents: write
+#       secrets:
+#         hub-token: ${{ secrets.HUB_DISPATCH_TOKEN }}
+#
+# The workflow file has to be named tag-build.yml. It is started on the tag in two ways:
+#   nightly: by package-version.yml with a workflow_dispatch on the tag of a pre-release
+#            (suite trixie-nightly)
+#   stable:  by a release event, when the pre-release is turned into a release in the
+#            GitHub UI (suite trixie). The release notes are generated again for all pull
+#            requests since the last release.
+# The version has to be the first entry of debian/changelog and match the tag.
+
+on:
+  workflow_call:
+    secrets:
+      hub-token:
+        description: Token that may start workflows of the APT repository (Actions, read and write)
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Prepare build
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      channel: ${{ steps.channel.outputs.channel }}
+      tag: ${{ steps.channel.outputs.tag }}
+    steps:
+      - name: Select channel
+        id: channel
+        run: |
+          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then
+            echo "::error::This workflow has to run on a tag, not on ${GITHUB_REF}."
+            exit 1
+          fi
+          channel=nightly
+          if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
+            channel=stable
+          fi
+          {
+            echo "channel=${channel}"
+            echo "tag=${GITHUB_REF_NAME}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout package repository
+        uses: actions/checkout@v4
+
+      - name: Checkout build scripts
+        uses: actions/checkout@v4
+        with:
+          repository: florian-asche/PiCompose-Repository
+          path: .picompose-repository
+
+      - name: Check the version
+        run: |
+          first_line="$(head -n 1 debian/changelog)"
+          if [[ "${first_line}" != *"(${GITHUB_REF_NAME#v})"* ]]; then
+            echo "::error::The first entry of debian/changelog does not match the tag ${GITHUB_REF_NAME}: ${first_line}"
+            exit 1
+          fi
+
+      - name: Compute matrix
+        id: matrix
+        run: |
+          matrix="$(python3 .picompose-repository/scripts/arch-matrix.py .)"
+          echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
+          echo "${matrix}"
+
+  build:
+    name: Build (${{ matrix.arch }})
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - name: Checkout package repository
+        uses: actions/checkout@v4
+
+      - name: Checkout build scripts
+        uses: actions/checkout@v4
+        with:
+          repository: florian-asche/PiCompose-Repository
+          path: .picompose-repository
+
+      - name: Set up QEMU for 32-bit ARM
+        if: matrix.arch == 'armhf'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/arm/v7
+
+      - name: Build package
+        run: |
+          ./.picompose-repository/scripts/build-package.sh . "${{ matrix.arch }}" --out "${RUNNER_TEMP}/out"
+          mkdir out && cp "${RUNNER_TEMP}"/out/*.deb out/
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-${{ matrix.arch }}
+          path: out/*.deb
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish
+    needs: [prepare, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      CHANNEL: ${{ needs.prepare.outputs.channel }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: deb-*
+          merge-multiple: true
+          path: debs
+
+      - name: Attach the packages to the release
+        run: gh release upload "${TAG}" debs/*.deb --repo "${GITHUB_REPOSITORY}" --clobber
+
+      - name: Generate the release notes again for the release
+        if: needs.prepare.outputs.channel == 'stable'
+        run: |
+          previous="$(gh release list --repo "${GITHUB_REPOSITORY}" --exclude-pre-releases --exclude-drafts --limit 20 --json tagName -q '.[].tagName' | grep -vx "${TAG}" | head -n 1 || true)"
+          args=(-f "tag_name=${TAG}")
+          if [ -n "${previous}" ]; then
+            args+=(-f "previous_tag_name=${previous}")
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" "${args[@]}" -q .body > "${RUNNER_TEMP}/notes.txt"
+          gh release edit "${TAG}" --repo "${GITHUB_REPOSITORY}" --notes-file "${RUNNER_TEMP}/notes.txt"
+
+      - name: Tell the APT repository to publish
+        env:
+          GH_TOKEN: ${{ secrets.hub-token }}
+        run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::The secret hub-token is not set, so the APT repository was not notified."
+            exit 1
+          fi
+          gh workflow run publish.yml --repo florian-asche/PiCompose-Repository --ref main \
+            -f "repository=${GITHUB_REPOSITORY}" -f "channel=${CHANNEL}" -f "run_id=${GITHUB_RUN_ID}"

@@ -1,0 +1,118 @@
+name: Version package
+
+# Reusable workflow for package repositories. It runs after a pull request was merged
+# to main and creates the next version:
+#
+#   on:
+#     push:
+#       branches: [main]
+#     workflow_dispatch:
+#       inputs:
+#         level:
+#           description: Part of the version to raise for the pending commits, empty to use the labels
+#           type: choice
+#           options: ['', major, minor, patch]
+#   concurrency:
+#     group: version
+#     cancel-in-progress: false
+#   jobs:
+#     version:
+#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-version.yml@main
+#       with:
+#         level: ${{ inputs.level }}
+#       permissions:
+#         contents: write
+#         actions: write
+#         pull-requests: read
+#
+# 1. The version in debian/changelog is raised by the highest label of major, minor and
+#    patch of the merged pull requests since the last version, and the changelog entry is
+#    written (the pull request titles). The workflow fails if a pull request has no or more
+#    than one of the labels, or if a commit has no merged pull request. Start it by hand
+#    with a level to get past that.
+# 2. debian/changelog is committed to main.
+# 3. The tag v<version> is created as pre-release, with the release notes GitHub
+#    generates from the template of .github/release.yml for the pull requests since
+#    the last tag.
+# 4. The workflow tag-build.yml is started on the tag. Tags and releases that a workflow
+#    creates with GITHUB_TOKEN start no workflows themselves, a workflow_dispatch does.
+
+on:
+  workflow_call:
+    inputs:
+      level:
+        description: Part of the version to raise, empty to use the labels
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Raise the version
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: write
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      LEVEL: ${{ inputs.level }}
+    steps:
+      - name: Checkout package repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Checkout build scripts
+        uses: actions/checkout@v4
+        with:
+          repository: florian-asche/PiCompose-Repository
+          path: .picompose-repository
+
+      - name: Raise the version and write the changelog
+        id: bump
+        run: |
+          scripts=.picompose-repository/scripts
+          notes="${RUNNER_TEMP}/notes.txt"
+          args=(--strict)
+          if [ -n "${LEVEL}" ]; then
+            args=(--level "${LEVEL}")
+          fi
+          version="$(python3 "${scripts}/package-version.py" bump --repository "${GITHUB_REPOSITORY}" --notes-file "${notes}" "${args[@]}")"
+          if [ -z "${version}" ]; then
+            echo "No new commits since the last version, nothing to do."
+            echo "version=" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          cat "${notes}"
+          python3 "${scripts}/make-changelog.py" . --version "${version}" --notes-file "${notes}" --date "$(date -R)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add debian/changelog
+          git commit -m "Version ${version}"
+          git push origin HEAD:main || { git pull --rebase origin main && git push origin HEAD:main; }
+          {
+            echo "version=${version}"
+            echo "sha=$(git rev-parse HEAD)"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Create the pre-release
+        if: steps.bump.outputs.version != ''
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+          SHA: ${{ steps.bump.outputs.sha }}
+        run: |
+          previous="$(git describe --tags --abbrev=0 --match 'v[0-9]*' "${SHA}~1" 2>/dev/null || true)"
+          args=(-f "tag_name=v${VERSION}" -f "target_commitish=${SHA}")
+          if [ -n "${previous}" ]; then
+            args+=(-f "previous_tag_name=${previous}")
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" "${args[@]}" -q .body > "${RUNNER_TEMP}/release-notes.txt"
+          gh release create "v${VERSION}" --target "${SHA}" --prerelease --title "v${VERSION}" --notes-file "${RUNNER_TEMP}/release-notes.txt"
+
+      - name: Start the build on the tag
+        if: steps.bump.outputs.version != ''
+        run: gh workflow run tag-build.yml --repo "${GITHUB_REPOSITORY}" --ref "v${{ steps.bump.outputs.version }}"
