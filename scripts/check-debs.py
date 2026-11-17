@@ -6,7 +6,7 @@ Usage: check-debs.py --repository <owner/name> --channel <stable|nightly|test> -
 
 Fails unless the repository is listed in sources.yml, every package name is one
 of the packages listed for it, the architecture is supported and the version
-matches the channel: nightly versions contain ~git, test versions ~test and
+matches the channel and is the same for all architectures of a package: nightly versions contain ~git, test versions ~test and
 stable versions no ~.
 """
 import argparse
@@ -47,6 +47,7 @@ def main() -> None:
         sys.exit(f"No .deb files in {args.debs}")
 
     errors = []
+    versions: dict[str, set[str]] = {}
     marker = VERSION_MARKERS[args.channel]
     for deb in debs:
         name, version, arch = (deb_field(deb, field) for field in ("Package", "Version", "Architecture"))
@@ -58,7 +59,11 @@ def main() -> None:
             errors.append(f"{deb.name}: version {version} contains ~, not a stable release")
         if marker is not None and marker not in version:
             errors.append(f"{deb.name}: version {version} does not contain {marker}")
+        versions.setdefault(name, set()).add(version)
         print(f"{deb.name}: {name} {version} {arch}")
+    for name, found in versions.items():
+        if len(found) > 1:
+            errors.append(f"{name}: different versions for different architectures: {', '.join(sorted(found))}")
     if errors:
         sys.exit("\n".join(errors))
 

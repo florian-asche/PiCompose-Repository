@@ -1,16 +1,18 @@
 #!/bin/bash
 # Build one package for one architecture inside a clean debian:trixie container.
 #
-# Usage: scripts/build-package.sh <source-dir> <arch> [--channel nightly|test] [--out <dir>]
+# Usage: scripts/build-package.sh <source-dir> <arch> [--channel nightly|test] [--stamp <timestamp>] [--out <dir>]
 #   source-dir  checkout of a package repository (the directory that contains debian/)
 #   arch        amd64, arm64 or armhf
 #   --channel   build a pre-release: nightly gives <version>~git<timestamp>.<sha>,
 #               test gives <version>~test<timestamp>.<sha>. Without it the version is unchanged.
+#   --stamp     UTC timestamp YYYYMMDDHHMMSS of the pre-release version (default: now).
+#               Pass the same value for every architecture of one release.
 #   --out       directory for the resulting .deb files (default: ./out)
 set -euo pipefail
 
 if [ $# -lt 2 ]; then
-    sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
     exit 1
 fi
 
@@ -20,6 +22,7 @@ shift 2
 
 SNAPSHOT_LABEL=""
 OUT_DIR="out"
+STAMP="$(date -u +%Y%m%d%H%M%S)"
 while [ $# -gt 0 ]; do
     case "$1" in
         --channel)
@@ -29,6 +32,7 @@ while [ $# -gt 0 ]; do
                 *) echo "Unknown channel: $2" >&2; exit 1 ;;
             esac
             shift ;;
+        --stamp) STAMP="$2"; shift ;;
         --out) OUT_DIR="$2"; shift ;;
         *) echo "Unknown option: $1" >&2; exit 1 ;;
     esac
@@ -58,6 +62,7 @@ docker run --rm --platform "$PLATFORM" \
     -e "ARCH=${ARCH}" \
     -e "SNAPSHOT_LABEL=${SNAPSHOT_LABEL}" \
     -e "SHORT_SHA=${SHORT_SHA}" \
+    -e "STAMP=${STAMP}" \
     -e "HOST_UID=$(id -u)" \
     -e "HOST_GID=$(id -g)" \
     -e "DEBIAN_FRONTEND=noninteractive" \
@@ -74,7 +79,7 @@ docker run --rm --platform "$PLATFORM" \
             BASE_VERSION="$(dpkg-parsechangelog -S Version)"
             DEBFULLNAME="PiCompose CI" DEBEMAIL="github@florian-asche.de" \
                 dch --force-bad-version --force-distribution --distribution trixie --newversion \
-                "${BASE_VERSION}~${SNAPSHOT_LABEL}$(date -u +%Y%m%d%H%M%S).${SHORT_SHA}" "Pre-release build."
+                "${BASE_VERSION}~${SNAPSHOT_LABEL}${STAMP}.${SHORT_SHA}" "Pre-release build."
         fi
 
         dpkg-buildpackage -us -uc -b
