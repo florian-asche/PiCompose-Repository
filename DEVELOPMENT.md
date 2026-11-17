@@ -27,7 +27,7 @@ The directory name below `packages/` is the source package name and has to match
 
 ## Adding a Package
 
-1. Create `packages/<name>/` with a `debian/` directory. Copy `packages/picompose-hello` as a starting point.
+1. Create `packages/<name>/` with a `debian/` directory. Copy `packages/picompose-hello` as a starting point. The same package is also available as the template repository [PiCompose-Package-Hello](https://github.com/florian-asche/PiCompose-Package-Hello).
 2. Use `3.0 (native)` in `debian/source/format`, so the version has no Debian revision (`1.0.0`, not `1.0.0-1`).
 3. Set `Architecture: all` for scripts, configuration and device tree overlays. Use `any` for compiled content. The CI builds `all` packages on `amd64` only and everything else on `amd64`, `arm64` and `armhf`.
 4. Build and lint it locally (see below).
@@ -62,7 +62,7 @@ python3 scripts/build-matrix.py --base origin/main
 - Every change to a package raises the version in `debian/changelog`.
 - Pushes to `main` build the changed packages and publish them to the suite `trixie-nightly` with the version `<version>~git<date>.<sha>`. The `~` makes a nightly sort below the release.
 - Pushes to the branch `test` publish to the suite `trixie-test` with the version `<version>~test<date>.<sha>`. Use it to try a change on a device before it is merged. Everybody who pushes to `test` shares this suite, and a newer push replaces the previous test version of a package.
-- A release is a tag `<package>/<version>`, for example `picompose-hello/0.1.0`. The version has to match the first entry in `debian/changelog`. Only that package is built and published to the suite `trixie`.
+- A release is a tag `<package>/<version>`, for example `picompose-hello/0.1.1`. The version has to match the first entry in `debian/changelog`. Only that package is built and published to the suite `trixie`.
 - Pull requests build the changed packages and publish nothing.
 
 A change to `scripts/` or `.github/workflows/build.yml` rebuilds every package.
@@ -77,7 +77,7 @@ Suites are defined in `apt/conf/distributions`. Clients only know the repository
 
 1. Create a dedicated GPG key (details, renewal and key leak handling: [docs/gpg_signing_key.md](docs/gpg_signing_key.md)): a master key that only certifies and stays offline, and a signing subkey that goes into CI. The key has no passphrase, because CI has to sign unattended. The master key is protected by where you store it (encrypted disk or password manager).
    ```bash
-   gpg --quick-generate-key "PiCompose Archive <github@florian-asche.de>" ed25519 cert 0
+   gpg --quick-generate-key "PiCompose Archive <picompose@florian-asche.de>" ed25519 cert 0
    gpg --list-keys --with-colons | awk -F: '/^fpr/ {print $10; exit}'    # prints the fingerprint
    gpg --quick-add-key <FINGERPRINT> ed25519 sign 2y
    gpg --list-keys --with-colons | awk -F: '/^sub/ {print $5; exit}'     # prints the subkey id
@@ -109,5 +109,5 @@ Notes:
 
 - **lintian fails the build:** The container output lists the tags. Fix them or add an override in `debian/<package>.lintian-overrides` with a comment explaining why.
 - **`apt-get build-dep` fails:** `Build-Depends` in `debian/control` names a package that does not exist in `trixie`.
-- **Publish job is skipped:** It only runs for pushes to `main` and for tags, and only when at least one package was built.
+- **Publish job is skipped:** It only runs for pushes to `main` and `test` and for tags, and only when at least one package was built.
 - **Reprepro refuses a package:** The same version with different content is already in the repository. Raise the version.

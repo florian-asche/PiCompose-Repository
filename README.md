@@ -19,7 +19,7 @@ PiCompose installs audio drivers, the audio server configuration, the Docker Com
 | --- | --- | --- |
 | `picompose-hello` | Test package for the build and publish pipeline | available |
 
-All packages for PiCompose (audio drivers, `picompose-core`, audio configuration, the voice assistant) are built in this repository.
+All packages for PiCompose (audio drivers, `picompose-core`, audio configuration, the voice assistant) are built in this repository. [PiCompose-Package-Hello](https://github.com/florian-asche/PiCompose-Package-Hello) is the same example package as a standalone repository and serves as a template for a package of its own.
 
 ## Usage
 
