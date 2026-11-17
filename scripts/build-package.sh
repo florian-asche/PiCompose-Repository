@@ -1,18 +1,19 @@
 #!/bin/bash
 # Build one package for one architecture inside a clean debian:trixie container.
 #
-# Usage: scripts/build-package.sh <source-dir> <arch> [--channel nightly|test] [--stamp <timestamp>] [--out <dir>]
-#   source-dir  checkout of a package repository (the directory that contains debian/)
-#   arch        amd64, arm64 or armhf
-#   --channel   build a pre-release: nightly gives <version>~git<timestamp>.<sha>,
-#               test gives <version>~test<timestamp>.<sha>. Without it the version is unchanged.
-#   --stamp     UTC timestamp YYYYMMDDHHMMSS of the pre-release version (default: now).
-#               Pass the same value for every architecture of one release.
-#   --out       directory for the resulting .deb files (default: ./out)
+# Usage: scripts/build-package.sh <source-dir> <arch> [--version <version> --notes-file <file> [--date <date>]] [--out <dir>]
+#   source-dir    checkout of a package repository (the directory that contains debian/)
+#   arch          amd64, arm64 or armhf
+#   --version     replace debian/changelog with one entry for this version, made from the
+#                 notes file (see make-changelog.py and package-version.py).
+#                 Without it the debian/changelog of the repository is used.
+#   --notes-file  release or pull request text for the changelog entry
+#   --date        date of the changelog entry as RFC 2822 (default: now)
+#   --out         directory for the resulting .deb files (default: ./out)
 set -euo pipefail
 
 if [ $# -lt 2 ]; then
-    sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
     exit 1
 fi
 
@@ -20,19 +21,15 @@ SOURCE_DIR="$1"
 ARCH="$2"
 shift 2
 
-SNAPSHOT_LABEL=""
+VERSION=""
+NOTES_FILE=""
+ENTRY_DATE=""
 OUT_DIR="out"
-STAMP="$(date -u +%Y%m%d%H%M%S)"
 while [ $# -gt 0 ]; do
     case "$1" in
-        --channel)
-            case "$2" in
-                nightly) SNAPSHOT_LABEL="git" ;;
-                test) SNAPSHOT_LABEL="test" ;;
-                *) echo "Unknown channel: $2" >&2; exit 1 ;;
-            esac
-            shift ;;
-        --stamp) STAMP="$2"; shift ;;
+        --version) VERSION="$2"; shift ;;
+        --notes-file) NOTES_FILE="$2"; shift ;;
+        --date) ENTRY_DATE="$2"; shift ;;
         --out) OUT_DIR="$2"; shift ;;
         *) echo "Unknown option: $1" >&2; exit 1 ;;
     esac
@@ -44,6 +41,7 @@ if [ ! -f "${SOURCE_DIR}/debian/control" ]; then
     exit 1
 fi
 SOURCE_DIR="$(cd "$SOURCE_DIR" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 case "$ARCH" in
     amd64) PLATFORM="linux/amd64" ;;
@@ -54,15 +52,22 @@ esac
 
 mkdir -p "$OUT_DIR"
 OUT_DIR="$(cd "$OUT_DIR" && pwd)"
-SHORT_SHA="$(git -C "$SOURCE_DIR" rev-parse --short=7 HEAD 2>/dev/null || echo unknown)"
+
+BUILD_DIR="$(mktemp -d)"
+trap 'rm -rf "$BUILD_DIR"' EXIT
+cp -a "$SOURCE_DIR/." "$BUILD_DIR/"
+if [ -n "$VERSION" ]; then
+    if [ -z "$NOTES_FILE" ]; then
+        echo "--version needs --notes-file" >&2
+        exit 1
+    fi
+    python3 "${SCRIPT_DIR}/make-changelog.py" "$BUILD_DIR" --version "$VERSION" --notes-file "$NOTES_FILE" ${ENTRY_DATE:+--date "$ENTRY_DATE"}
+fi
 
 docker run --rm --platform "$PLATFORM" \
-    -v "${SOURCE_DIR}:/src:ro" \
+    -v "${BUILD_DIR}:/src:ro" \
     -v "${OUT_DIR}:/out" \
     -e "ARCH=${ARCH}" \
-    -e "SNAPSHOT_LABEL=${SNAPSHOT_LABEL}" \
-    -e "SHORT_SHA=${SHORT_SHA}" \
-    -e "STAMP=${STAMP}" \
     -e "HOST_UID=$(id -u)" \
     -e "HOST_GID=$(id -g)" \
     -e "DEBIAN_FRONTEND=noninteractive" \
@@ -74,13 +79,6 @@ docker run --rm --platform "$PLATFORM" \
         cp -a /src /build/pkg
         cd /build/pkg
         apt-get build-dep -y -qq ./ >/dev/null
-
-        if [ -n "$SNAPSHOT_LABEL" ]; then
-            BASE_VERSION="$(dpkg-parsechangelog -S Version)"
-            DEBFULLNAME="PiCompose CI" DEBEMAIL="github@florian-asche.de" \
-                dch --force-bad-version --force-distribution --distribution trixie --newversion \
-                "${BASE_VERSION}~${SNAPSHOT_LABEL}${STAMP}.${SHORT_SHA}" "Pre-release build."
-        fi
 
         dpkg-buildpackage -us -uc -b
         lintian --fail-on error --display-info ../*.deb

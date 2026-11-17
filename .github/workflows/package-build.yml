@@ -12,9 +12,12 @@ name: Build package
 #         hub-token: ${{ secrets.HUB_DISPATCH_TOKEN }}
 #
 # Pushes to main build the nightly channel, pushes to the branch test the test
-# channel and version tags (<version> or v<version>) the stable channel. Pull
-# requests and other branches only build. The packages are attached to a GitHub
-# release of the package repository and the APT repository is told to publish them.
+# channel and a published release the stable channel. Pull requests and other
+# branches only build. The package repository does not maintain debian/changelog:
+# the build writes it. A release gives the version of its tag and the release
+# text, a push the next patch version after the newest tag and the text of the
+# pull request of the commit. The packages are attached to a GitHub release of
+# the package repository and the APT repository is told to publish them.
 
 on:
   workflow_call:
@@ -33,10 +36,13 @@ jobs:
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       channel: ${{ steps.channel.outputs.channel }}
-      stamp: ${{ steps.channel.outputs.stamp }}
+      version: ${{ steps.version.outputs.version }}
+      entry_date: ${{ steps.version.outputs.entry_date }}
     steps:
       - name: Checkout package repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Checkout build scripts
         uses: actions/checkout@v4
@@ -48,27 +54,59 @@ jobs:
         id: channel
         run: |
           channel=none
-          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
-            if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-              channel=stable
-            elif [ "${GITHUB_REF_NAME}" = "main" ]; then
+          if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
+            channel=stable
+          elif [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            if [ "${GITHUB_REF_NAME}" = "main" ]; then
               channel=nightly
             elif [ "${GITHUB_REF_NAME}" = "test" ]; then
               channel=test
             fi
           fi
           echo "channel=${channel}" >> "${GITHUB_OUTPUT}"
-          echo "stamp=$(date -u +%Y%m%d%H%M%S)" >> "${GITHUB_OUTPUT}"
+
+      - name: Compute version and changelog text
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANNEL: ${{ steps.channel.outputs.channel }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+          RELEASE_DATE: ${{ github.event.release.published_at }}
+        run: |
+          mkdir -p "${RUNNER_TEMP}/notes"
+          if [ "${CHANNEL}" = "stable" ]; then
+            version="$(python3 .picompose-repository/scripts/package-version.py --channel stable --tag "${RELEASE_TAG}")"
+            printf '%s\n' "${RELEASE_BODY}" > "${RUNNER_TEMP}/notes/notes.txt"
+            entry_date="$(date -u -d "${RELEASE_DATE}" -R)"
+          elif [ "${CHANNEL}" != "none" ]; then
+            version="$(python3 .picompose-repository/scripts/package-version.py --channel "${CHANNEL}" --stamp "$(date -u +%Y%m%d%H%M%S)" --sha "${GITHUB_SHA::7}")"
+            gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" -q '.[0] | select(. != null) | .title + "\n\n" + (.body // "")' > "${RUNNER_TEMP}/notes/notes.txt" || true
+            if [ ! -s "${RUNNER_TEMP}/notes/notes.txt" ]; then
+              git log -1 --format=%B > "${RUNNER_TEMP}/notes/notes.txt"
+            fi
+            entry_date="$(date -u -R)"
+          else
+            version="$(python3 .picompose-repository/scripts/package-version.py --channel nightly --stamp "$(date -u +%Y%m%d%H%M%S)" --sha "${GITHUB_SHA::7}")"
+            printf 'Build of %s\n' "${GITHUB_SHA::7}" > "${RUNNER_TEMP}/notes/notes.txt"
+            entry_date="$(date -u -R)"
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "entry_date=${entry_date}" >> "${GITHUB_OUTPUT}"
+          echo "${version}"
+          cat "${RUNNER_TEMP}/notes/notes.txt"
+
+      - name: Upload changelog text
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog-notes
+          path: ${{ runner.temp }}/notes/notes.txt
+          if-no-files-found: error
 
       - name: Compute matrix
         id: matrix
         run: |
-          tag=""
-          if [ "${{ steps.channel.outputs.channel }}" = "stable" ]; then
-            tag="--tag ${GITHUB_REF_NAME}"
-          fi
-          # shellcheck disable=SC2086
-          matrix="$(python3 .picompose-repository/scripts/arch-matrix.py . ${tag})"
+          matrix="$(python3 .picompose-repository/scripts/arch-matrix.py .)"
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
           echo "${matrix}"
 
@@ -95,15 +133,19 @@ jobs:
         with:
           platforms: linux/arm/v7
 
+      - name: Download changelog text
+        uses: actions/download-artifact@v4
+        with:
+          name: changelog-notes
+          path: ${{ runner.temp }}/notes
+
       - name: Build package
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          ENTRY_DATE: ${{ needs.prepare.outputs.entry_date }}
         run: |
-          channel=""
-          case "${{ needs.prepare.outputs.channel }}" in
-            nightly) channel="--channel nightly" ;;
-            test) channel="--channel test" ;;
-          esac
-          # shellcheck disable=SC2086
-          ./.picompose-repository/scripts/build-package.sh . "${{ matrix.arch }}" ${channel} --stamp "${{ needs.prepare.outputs.stamp }}" --out "${RUNNER_TEMP}/out"
+          ./.picompose-repository/scripts/build-package.sh . "${{ matrix.arch }}" --version "${VERSION}" \
+            --notes-file "${RUNNER_TEMP}/notes/notes.txt" --date "${ENTRY_DATE}" --out "${RUNNER_TEMP}/out"
           mkdir out && cp "${RUNNER_TEMP}"/out/*.deb out/
 
       - name: Upload packages
@@ -135,9 +177,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${CHANNEL}" = "stable" ]; then
-            tag="${GITHUB_REF_NAME}"
-            gh release view "${tag}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1 \
-              || gh release create "${tag}" --repo "${GITHUB_REPOSITORY}" --verify-tag --generate-notes
+            tag="${{ github.event.release.tag_name }}"
             gh release upload "${tag}" debs/*.deb --repo "${GITHUB_REPOSITORY}" --clobber
           else
             tag="${CHANNEL}"

@@ -26,14 +26,16 @@ The package repository never sees the signing key. The dispatch only says which 
 
 | Event in the package repository | Channel | Suite | Version |
 | --- | --- | --- | --- |
-| Tag `v<version>` | stable | `trixie` | `<version>` |
-| Push to `main` | nightly | `trixie-nightly` | `<version>~git<timestamp>.<sha>` |
-| Push to the branch `test` | test | `trixie-test` | `<version>~test<timestamp>.<sha>` |
+| Published release with the tag `v<version>` | stable | `trixie` | `<version>` |
+| Push to `main` | nightly | `trixie-nightly` | `<next version>~git<timestamp>.<sha>` |
+| Push to the branch `test` | test | `trixie-test` | `<next version>~test<timestamp>.<sha>` |
 | Pull request | none | none | built and linted only |
 
-- The tag has to match the first entry of `debian/changelog`. A tag without the leading `v` is accepted by the build script, but the workflow of the template only starts for `v<version>`.
+- The package repository does not maintain `debian/changelog`. The build writes it and the file ends up in the package (`/usr/share/doc/<package>/changelog.gz`, shown by `apt changelog`). The file in git is a placeholder.
+- A release gives the version of its tag (`v1.2.0` gives `1.2.0`) and its release text as changelog entry, dated with the publication of the release. Create the release in the GitHub UI, and let GitHub generate the notes from the merged pull requests.
+- A push to `main` or `test` counts the version up: the next patch version after the newest release tag (`0.0.1` while there is none), for example `1.2.1~git20261117060000.abc1234`. The changelog entry is made from the title and text of the pull request of the commit, or from the commit message if there is none.
+- The `~` makes a pre-release sort below the release it leads to. The timestamp (`YYYYMMDDHHMMSS`) is the same for all architectures of one build and makes a newer push sort above an older one.
 - Nightly and test builds are attached to a rolling pre-release of the package repository with the tag `nightly` or `test`. Every push replaces it.
-- The timestamp has the format `YYYYMMDDHHMMSS`, so a newer push always sorts above an older one. The `~` makes both sort below the release.
 - A suite holds one version per package. A newer build replaces the previous one in that suite.
 - Packages with `Architecture: all` are built on `amd64` only. Everything else is built for `amd64`, `arm64` and `armhf`.
 
@@ -45,6 +47,8 @@ apt/conf/               reprepro configuration (suites and architectures)
 scripts/
   build-package.sh      build one package for one architecture in a container
   arch-matrix.py        print the build matrix (architectures) of a package repository
+  package-version.py    compute the version of a build (release tag or next patch version)
+  make-changelog.py     write debian/changelog from release or pull request text
   check-debs.py         check downloaded .deb files against sources.yml and the channel
   publish-apt.sh        add .deb files to the repository tree and sign it
 docs/                   documentation
@@ -78,7 +82,7 @@ Check out a package repository and build it with the script of this repository:
 ./scripts/build-package.sh ../PiCompose-Package-Hello amd64
 ```
 
-The `.deb` files end up in `out/`. The script installs the build dependencies in a fresh container, runs `dpkg-buildpackage` and then `lintian`. Errors reported by lintian fail the build. Add `--channel nightly` or `--channel test` to build with a pre-release version.
+The `.deb` files end up in `out/`. The script installs the build dependencies in a fresh container, runs `dpkg-buildpackage` and then `lintian`. Errors reported by lintian fail the build. The `debian/changelog` of the repository is used as it is. To build with a generated entry, pass `--version <version> --notes-file <file>`, see `scripts/build-package.sh`.
 
 Other architectures run through QEMU emulation when your host is not that architecture, which is slow. Register the emulators once with `docker run --privileged --rm tonistiigi/binfmt --install all`.
 
@@ -134,7 +138,7 @@ Notes:
 
 ## Troubleshooting
 
-- **lintian fails the build:** The container output lists the tags. Fix them or add an override in `debian/<package>.lintian-overrides` with a comment explaining why. The tag `latest-changelog-entry-without-new-date` means the new changelog entry is not newer than the previous one.
+- **lintian fails the build:** The container output lists the tags. Fix them or add an override in `debian/<package>.lintian-overrides` with a comment explaining why.
 - **`apt-get build-dep` fails:** `Build-Depends` in `debian/control` names a package that does not exist in `trixie`.
 - **A release does not show up:** Check the run of the package repository (the step "Tell the APT repository to publish" fails when `HUB_DISPATCH_TOKEN` is missing or expired), then the run "Publish to APT repository" here. `check-debs.py` refuses repositories that are not in `sources.yml`, package names that are not listed and versions that do not fit the channel.
 - **Reprepro refuses a package:** The same version with different content is already in the repository. Raise the version.
