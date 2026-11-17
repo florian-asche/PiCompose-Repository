@@ -14,7 +14,7 @@ name: Release package
 #         hub-token: ${{ secrets.HUB_DISPATCH_TOKEN }}
 #
 # The version of a release is the first entry of debian/changelog on main, which the
-# nightly build wrote when the last pull request was merged. The workflow tags the
+# build for trixie-nightly wrote when the last pull request was merged. The workflow tags the
 # newest commit of main v<version>, creates the GitHub release with the notes GitHub
 # generates from the pull requests since the last release, and builds and publishes
 # that version from the tag to the suite trixie.

@@ -28,8 +28,8 @@ The package repository never sees the signing key. The call only says which repo
 
 | Started by | Channel | Result | Version |
 | --- | --- | --- | --- |
-| Push to `main` (a merged pull request) | nightly | suite `trixie-nightly` | the next version, written to `debian/changelog` |
-| Workflow "Release" | stable | suite `trixie` and a GitHub release with the tag `v<version>` | the version of `debian/changelog` |
+| Push to `main` (a merged pull request) | trixie-nightly | suite `trixie-nightly` | the next version, written to `debian/changelog` |
+| Workflow "Release" | trixie | suite `trixie` and a GitHub release with the tag `v<version>` | the version of `debian/changelog` |
 | Push to any other branch, pull request from a fork | dev | workflow artifact, kept for 14 days | `<version>+dev<timestamp>.<sha>` |
 
 1. **Pull request:** Every pull request needs exactly one of the labels `major`, `minor` and `patch`. It decides how the version is raised when the pull request is merged. The check "Version label" fails until the label is set. The label can be set by hand or by ticking one box under "Version bump" in the pull request description. Pull requests of Dependabot get `patch`. Make the check required in the branch protection of `main`.
@@ -38,7 +38,7 @@ The package repository never sees the signing key. The call only says which repo
 4. **Branches:** Changes that are tried before they are merged build as dev. The version installs as an upgrade of the last release and nothing is published.
 
 - `debian/changelog` is part of the package (`/usr/share/doc/<package>/changelog.gz`, shown by `apt changelog`), so the package contains the whole history.
-- A suite holds one version per package. A newer version replaces the previous one. The nightly suite takes the newest build even if its version is lower.
+- A suite holds one version per package. A newer version replaces the previous one. The suite `trixie-nightly` takes the newest build even if its version is lower.
 - Packages with `Architecture: all` are built on `amd64` only. Everything else is built for `amd64`, `arm64` and `armhf`.
 
 ## Repository Layout
@@ -56,7 +56,7 @@ scripts/
 docs/                   documentation
 .github/workflows/
   package-build.yml     reusable build workflow (trixie-nightly, dev and trixie), called by the package repositories
-  package-release.yml   reusable release workflow: tag, release, then a stable build
+  package-release.yml   reusable release workflow: tag, release, then a build for the channel `trixie`
   package-pr-check.yml  reusable check that a pull request has a version label
   publish.yml           publish workflow, started by a package repository after a release
   ci.yml                lint of this repository
@@ -68,7 +68,7 @@ docs/                   documentation
 2. Add the repository and its package names to `sources.yml` in this repository. Publishing is refused until this is merged.
 3. Add the secret `HUB_DISPATCH_TOKEN` to the package repository (see "Dispatch token" below).
 4. In the branch protection of `main` of the package repository, require the check "Version label". Allow the workflows to push to `main` (or exempt `github-actions[bot]`), because the build commits `debian/changelog` there.
-5. Merge a pull request to publish the first nightly build, then add the package to the table in `README.md`.
+5. Merge a pull request to publish the first build to `trixie-nightly`, then add the package to the table in `README.md`.
 
 Conventions:
 
@@ -101,7 +101,7 @@ gh secret set HUB_DISPATCH_TOKEN --repo florian-asche/PiCompose-Package-Hello
 
 The token expires, so put the expiry date in a calendar. A GitHub App installed on the package repositories avoids that and is the better choice once there are many of them. The workflow only needs a token in the secret `hub-token`, so the change does not touch the package repositories except for the step that creates the token.
 
-To publish a build again, start the workflow "Publish to APT repository" by hand and enter the repository, the channel and the ID of the workflow run of the package repository.
+To publish a build again, start the workflow "Publish to APT repository" by hand and enter the repository, the channel (`trixie` or `trixie-nightly`) and the ID of the workflow run of the package repository.
 
 ## APT Repository
 
