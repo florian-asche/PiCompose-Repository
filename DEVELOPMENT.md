@@ -64,6 +64,7 @@ docs/                   documentation
   package-release.yml   reusable release workflow of the previous flow, still used by the keyring
   package-pr-check.yml  reusable check that a pull request has a version label
   publish.yml           publish workflow, started by a package repository after a build
+  remove-package.yml    removes a package from the suites by hand, for example after a rename
   ci.yml                lint of this repository
 ```
 

@@ -1,0 +1,74 @@
+name: Remove a package from the APT repository
+
+# Removes all versions of a package from one or both suites, for example after a
+# package was renamed. Started by hand (Actions, Run workflow).
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Name of the package to remove, for example picompose-hello
+        required: true
+      suite:
+        description: Suite to remove it from
+        required: true
+        type: choice
+        options:
+          - both
+          - trixie
+          - trixie-nightly
+
+permissions:
+  contents: read
+
+jobs:
+  remove:
+    name: Remove
+    runs-on: ubuntu-24.04
+    environment: apt-publish
+    concurrency:
+      group: apt-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    env:
+      PACKAGE: ${{ inputs.package }}
+      SUITE: ${{ inputs.suite }}
+    steps:
+      - name: Validate the request
+        run: |
+          [[ "${PACKAGE}" =~ ^[a-z0-9][a-z0-9+.-]+$ ]] || { echo "::error::Invalid package name"; exit 1; }
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y reprepro
+
+      - name: Import signing key
+        env:
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+        run: echo "${APT_GPG_PRIVATE_KEY}" | gpg --batch --import
+
+      - name: Check out the published repository
+        run: git clone --branch gh-pages --depth 1 "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" apt-repo
+
+      - name: Remove the package
+        run: |
+          mkdir -p apt-repo/conf
+          cp apt/conf/* apt-repo/conf/
+          if [ "${SUITE}" = both ]; then suites="trixie trixie-nightly"; else suites="${SUITE}"; fi
+          for suite in ${suites}; do
+            reprepro --basedir apt-repo remove "${suite}" "${PACKAGE}"
+          done
+          reprepro --basedir apt-repo deleteunreferenced
+
+      - name: Push the published repository
+        run: |
+          cd apt-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git diff --cached --quiet && { echo "Nothing to remove."; exit 0; }
+          git commit -m "Remove ${PACKAGE} from ${SUITE}"
+          git push origin gh-pages
