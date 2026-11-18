@@ -16,6 +16,28 @@ Description: PiCompose APT repository signing key and source
  apt source entry for the stable suite. Keeping the key in a package lets
  it be renewed or replaced with a normal upgrade.
 
+Package: picompose-software-ha-satellite
+Version: 0.1.2
+Architecture: all
+Maintainer: Florian Asche <github@florian-asche.de>
+Installed-Size: 28
+Homepage: https://github.com/florian-asche/PiCompose-Package-Software-HA-Satellite
+Priority: optional
+Section: admin
+Filename: pool/main/p/picompose-software-ha-satellite/picompose-software-ha-satellite_0.1.2_all.deb
+Size: 6284
+SHA256: 9e0680ee140bd5836eac2a22edc1b9148dbd58cf4525a3184b16a8815cf87fc4
+SHA1: ca3394bfcc4d022e40ba00c81d76ae85b39f61f5
+MD5sum: 2ea3ea8bfbddf489d075391db0da9b18
+Description: Home Assistant voice satellite for PiCompose
+ Compose projects that turn a PiCompose system into a Home Assistant voice
+ satellite: the Linux voice assistant and a Snapcast client for audio playback.
+ .
+ The projects are copied to /compose, where the PiCompose compose manager
+ deploys them. docker-compose.yml is updated with the package, picompose.conf
+ and .env are only written on first installation. The Linux voice assistant is enabled, the Snapcast client is
+ disabled until it is enabled in its picompose.conf.
+
 Package: picompose-software-hello
 Version: 1.1.4
 Architecture: arm64
