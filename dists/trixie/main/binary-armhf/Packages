@@ -16,6 +16,29 @@ Description: PiCompose APT repository signing key and source
  apt source entry for the stable suite. Keeping the key in a package lets
  it be renewed or replaced with a normal upgrade.
 
+Package: picompose-core
+Version: 0.1.0
+Architecture: all
+Maintainer: Florian Asche <github@florian-asche.de>
+Installed-Size: 44
+Depends: cron, iproute2, systemd
+Homepage: https://github.com/florian-asche/PiCompose-Package-Core
+Priority: optional
+Section: admin
+Filename: pool/main/p/picompose-core/picompose-core_0.1.0_all.deb
+Size: 7528
+SHA256: 25a61c79ebb182276587a80c6011051e712bfbce2e665ee8fb59e1c80871e5bf
+SHA1: 624307a0da557a20a9b4c84a6d21286eef9e6987
+MD5sum: 3f71c9990d7532481065dd2704c3402f
+Description: PiCompose base system
+ The compose manager of PiCompose, the PipeWire and WirePlumber
+ configuration for the Linux voice assistant and the hostname setup of the
+ PiCompose image.
+ .
+ The compose manager deploys every Docker Compose project below /compose
+ at boot and on a schedule. Docker itself and the PipeWire packages are not
+ part of this package, the PiCompose image installs them.
+
 Package: picompose-software-ha-satellite
 Version: 0.1.2
 Architecture: all
