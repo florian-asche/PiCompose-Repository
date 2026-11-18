@@ -172,19 +172,19 @@ Description: PiCompose audio setup for the Satellite1
  can be installed.
 
 Package: picompose-software-ha-satellite
-Version: 0.0.4
+Version: 0.1.0
 Architecture: all
 Maintainer: Florian Asche <github@florian-asche.de>
-Installed-Size: 27
+Installed-Size: 28
 Depends: picompose-core
 Homepage: https://github.com/florian-asche/PiCompose-Package-Software-HA-Satellite
 Priority: optional
 Section: admin
-Filename: pool/main/p/picompose-software-ha-satellite/picompose-software-ha-satellite_0.0.4_all.deb
-Size: 5516
-SHA256: 377e00aa43677a36ed5aadf11be8cf5d0bbfd6b8f43b4b35013ad5d90b5719df
-SHA1: 2927b5aa1f09469f7046c465cac5f038349ab65b
-MD5sum: d9dbfb4bc7bd033da78729b2fc976a57
+Filename: pool/main/p/picompose-software-ha-satellite/picompose-software-ha-satellite_0.1.0_all.deb
+Size: 6236
+SHA256: 325c7dd1798e05bdd33fa01637519027ccd94704a9592d15fb85dbab484809fb
+SHA1: 1b155573559b1475b5586119fa0a3a07c3edc0be
+MD5sum: b1fd5e5424e728bfa047a543974225ae
 Description: Home Assistant voice satellite for PiCompose
  Compose projects that turn a PiCompose system into a Home Assistant voice
  satellite: the Linux voice assistant and a Snapcast client for audio playback.
