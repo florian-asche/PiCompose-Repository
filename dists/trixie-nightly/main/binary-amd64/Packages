@@ -16,6 +16,29 @@ Description: PiCompose APT repository signing key and source
  apt source entry for the stable suite. Keeping the key in a package lets
  it be renewed or replaced with a normal upgrade.
 
+Package: picompose-core
+Version: 0.0.1
+Architecture: all
+Maintainer: Florian Asche <github@florian-asche.de>
+Installed-Size: 43
+Depends: cron, iproute2, systemd, pipewire, wireplumber, pipewire-audio-client-libraries, libspa-0.2-bluetooth, pipewire-audio, pulseaudio-utils, pipewire-pulse
+Recommends: git, jq, curl, wget, vim, htop, python3, python3-pip, dfu-util
+Homepage: https://github.com/florian-asche/PiCompose-Package-Core
+Priority: optional
+Section: admin
+Filename: pool/main/p/picompose-core/picompose-core_0.0.1_all.deb
+Size: 7624
+SHA256: 1ef8fea4fcf8cb993cd3ed57c38899a8e8e3c94bdad0de63e70687cc83ea332b
+SHA1: 3f637a26c5b1f6f1e836d17f1ff6da70b5283ac4
+MD5sum: a7a4ef2e5b24af572bf990da53a97c21
+Description: PiCompose base system
+ The compose manager of PiCompose, the PipeWire audio setup for the Linux
+ voice assistant and the hostname setup of the PiCompose image.
+ .
+ The compose manager deploys every Docker Compose project below /compose
+ at boot and on a schedule. Docker itself is not part of this package, the
+ PiCompose image installs it from the Docker apt repository.
+
 Package: picompose-driver-2michat-v1
 Version: 0.0.1
 Architecture: all
