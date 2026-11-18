@@ -17,19 +17,19 @@ Description: PiCompose APT repository signing key and source
  it be renewed or replaced with a normal upgrade.
 
 Package: picompose-core
-Version: 0.1.0
+Version: 0.2.1
 Architecture: all
 Maintainer: Florian Asche <github@florian-asche.de>
-Installed-Size: 44
-Depends: cron, iproute2, systemd
+Installed-Size: 47
+Depends: cron, iproute2, systemd, unattended-upgrades
 Homepage: https://github.com/florian-asche/PiCompose-Package-Core
 Priority: optional
 Section: admin
-Filename: pool/main/p/picompose-core/picompose-core_0.1.0_all.deb
-Size: 7528
-SHA256: 25a61c79ebb182276587a80c6011051e712bfbce2e665ee8fb59e1c80871e5bf
-SHA1: 624307a0da557a20a9b4c84a6d21286eef9e6987
-MD5sum: 3f71c9990d7532481065dd2704c3402f
+Filename: pool/main/p/picompose-core/picompose-core_0.2.1_all.deb
+Size: 7924
+SHA256: 7153d56aa5b0e336da501dfa73db02ed2d5ca8787110614046342ba96a40ccd3
+SHA1: c2ae8e41ac152745df4e558604ea8aeda43316f7
+MD5sum: 3438deb66dd7073d3d62fb3643ed7c4b
 Description: PiCompose base system
  The compose manager of PiCompose, the PipeWire and WirePlumber
  configuration for the Linux voice assistant and the hostname setup of the
