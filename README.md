@@ -1,6 +1,6 @@
 # PiCompose-Repository
 
-[![CI](https://github.com/florian-asche/PiCompose-Repository/actions/workflows/build.yml/badge.svg)](https://github.com/florian-asche/PiCompose-Repository/actions/workflows/build.yml) [![GitHub License](https://img.shields.io/github/license/florian-asche/PiCompose-Repository)](https://github.com/florian-asche/PiCompose-Repository/blob/main/LICENSE) [![GitHub last commit](https://img.shields.io/github/last-commit/florian-asche/PiCompose-Repository)](https://github.com/florian-asche/PiCompose-Repository/commits)
+[![CI](https://github.com/florian-asche/PiCompose-Repository/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/florian-asche/PiCompose-Repository/actions/workflows/ci.yml) [![GitHub License](https://img.shields.io/github/license/florian-asche/PiCompose-Repository)](https://github.com/florian-asche/PiCompose-Repository/blob/main/LICENSE) [![GitHub last commit](https://img.shields.io/github/last-commit/florian-asche/PiCompose-Repository)](https://github.com/florian-asche/PiCompose-Repository/commits)
 
 Debian packages and the signed APT repository for [PiCompose](https://github.com/florian-asche/PiCompose), the Raspberry Pi image for projects like [linux-voice-assistant](https://github.com/OHF-Voice/linux-voice-assistant).
 

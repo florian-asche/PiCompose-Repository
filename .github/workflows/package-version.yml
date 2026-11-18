@@ -17,7 +17,7 @@ name: Version package
 #     cancel-in-progress: false
 #   jobs:
 #     version:
-#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-version.yml@main
+#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-version.yml@v1.0.0
 #       with:
 #         level: ${{ inputs.level }}
 #       permissions:
@@ -61,16 +61,27 @@ jobs:
       LEVEL: ${{ inputs.level }}
     steps:
       - name: Checkout package repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: main
           fetch-depth: 0
 
+      - name: Find the shared workflows
+        id: hub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" -q '[.referenced_workflows[] | select(.path | startswith("florian-asche/PiCompose-Repository/.github/workflows/"))][0].sha')"
+          [[ "${sha}" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Could not find the version of the shared workflows."; exit 1; }
+          echo "sha=${sha}" >> "${GITHUB_OUTPUT}"
+
       - name: Checkout build scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: florian-asche/PiCompose-Repository
+          ref: ${{ steps.hub.outputs.sha }}
           path: .picompose-repository
+          persist-credentials: false
 
       - name: Raise the version and write the changelog
         id: bump

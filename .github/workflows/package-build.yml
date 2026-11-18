@@ -13,9 +13,10 @@ name: Build package
 #   jobs:
 #     package:
 #       if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
-#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-build.yml@main
+#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-build.yml@v1.0.0
 #       permissions:
 #         contents: write
+#         actions: read
 #       secrets:
 #         hub-token: ${{ secrets.HUB_DISPATCH_TOKEN }}
 #
@@ -52,6 +53,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      actions: read
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       channel: ${{ steps.channel.outputs.channel }}
@@ -62,9 +64,15 @@ jobs:
     steps:
       - name: Select channel
         id: channel
+        env:
+          RELEASE_VERSION: ${{ inputs.release-version }}
         run: |
+          if [ -n "${RELEASE_VERSION}" ] && ! [[ "${RELEASE_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid release version"
+            exit 1
+          fi
           channel=dev
-          if [ -n "${{ inputs.release-version }}" ]; then
+          if [ -n "${RELEASE_VERSION}" ]; then
             channel=trixie
           elif [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF_NAME}" = "main" ]; then
             channel=trixie-nightly
@@ -72,16 +80,27 @@ jobs:
           echo "channel=${channel}" >> "${GITHUB_OUTPUT}"
 
       - name: Checkout package repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ inputs.release-version != '' && format('v{0}', inputs.release-version) || (steps.channel.outputs.channel == 'trixie-nightly' && 'main' || '') }}
           fetch-depth: 0
 
+      - name: Find the shared workflows
+        id: hub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" -q '[.referenced_workflows[] | select(.path | startswith("florian-asche/PiCompose-Repository/.github/workflows/"))][0].sha')"
+          [[ "${sha}" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Could not find the version of the shared workflows."; exit 1; }
+          echo "sha=${sha}" >> "${GITHUB_OUTPUT}"
+
       - name: Checkout build scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: florian-asche/PiCompose-Repository
+          ref: ${{ steps.hub.outputs.sha }}
           path: .picompose-repository
+          persist-credentials: false
 
       - name: Compute version and changelog
         id: version
@@ -137,7 +156,7 @@ jobs:
 
       - name: Upload changelog text
         if: steps.channel.outputs.channel == 'dev'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: changelog-notes
           path: ${{ runner.temp }}/notes/notes.txt
@@ -156,30 +175,45 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.skip != 'true'
     runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
       - name: Checkout package repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ needs.prepare.outputs.ref }}
+          persist-credentials: false
+
+      - name: Find the shared workflows
+        id: hub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" -q '[.referenced_workflows[] | select(.path | startswith("florian-asche/PiCompose-Repository/.github/workflows/"))][0].sha')"
+          [[ "${sha}" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Could not find the version of the shared workflows."; exit 1; }
+          echo "sha=${sha}" >> "${GITHUB_OUTPUT}"
 
       - name: Checkout build scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: florian-asche/PiCompose-Repository
+          ref: ${{ steps.hub.outputs.sha }}
           path: .picompose-repository
+          persist-credentials: false
 
       - name: Set up QEMU for 32-bit ARM
         if: matrix.arch == 'armhf'
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
         with:
           platforms: linux/arm/v7
 
       - name: Download changelog text
         if: needs.prepare.outputs.channel == 'dev'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: changelog-notes
           path: ${{ runner.temp }}/notes
@@ -189,16 +223,17 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
           ENTRY_DATE: ${{ needs.prepare.outputs.entry_date }}
           CHANNEL: ${{ needs.prepare.outputs.channel }}
+          ARCH: ${{ matrix.arch }}
         run: |
           changelog=()
           if [ "${CHANNEL}" = "dev" ]; then
             changelog=(--version "${VERSION}" --notes-file "${RUNNER_TEMP}/notes/notes.txt" --date "${ENTRY_DATE}")
           fi
-          ./.picompose-repository/scripts/build-package.sh . "${{ matrix.arch }}" "${changelog[@]}" --out "${RUNNER_TEMP}/out"
+          ./.picompose-repository/scripts/build-package.sh . "${ARCH}" "${changelog[@]}" --out "${RUNNER_TEMP}/out"
           mkdir out && cp "${RUNNER_TEMP}"/out/*.deb out/
 
       - name: Upload packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: deb-${{ matrix.arch }}
           path: out/*.deb
@@ -217,7 +252,7 @@ jobs:
     steps:
       - name: Attach packages to the release
         if: needs.prepare.outputs.channel == 'trixie'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: deb-*
           merge-multiple: true
@@ -227,7 +262,8 @@ jobs:
         if: needs.prepare.outputs.channel == 'trixie'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "v${{ needs.prepare.outputs.version }}" debs/*.deb --repo "${GITHUB_REPOSITORY}" --clobber
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: gh release upload "v${VERSION}" debs/*.deb --repo "${GITHUB_REPOSITORY}" --clobber
 
       - name: Tell the APT repository to publish
         env:

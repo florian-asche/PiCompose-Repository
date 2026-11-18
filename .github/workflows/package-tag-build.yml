@@ -9,9 +9,10 @@ name: Build package from a tag
 #       types: [released]
 #   jobs:
 #     package:
-#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-tag-build.yml@main
+#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-tag-build.yml@v1.0.0
 #       permissions:
 #         contents: write
+#         actions: read
 #       secrets:
 #         hub-token: ${{ secrets.HUB_DISPATCH_TOKEN }}
 #
@@ -37,6 +38,9 @@ jobs:
   prepare:
     name: Prepare build
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       channel: ${{ steps.channel.outputs.channel }}
@@ -59,13 +63,26 @@ jobs:
           } >> "${GITHUB_OUTPUT}"
 
       - name: Checkout package repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Find the shared workflows
+        id: hub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" -q '[.referenced_workflows[] | select(.path | startswith("florian-asche/PiCompose-Repository/.github/workflows/"))][0].sha')"
+          [[ "${sha}" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Could not find the version of the shared workflows."; exit 1; }
+          echo "sha=${sha}" >> "${GITHUB_OUTPUT}"
 
       - name: Checkout build scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: florian-asche/PiCompose-Repository
+          ref: ${{ steps.hub.outputs.sha }}
           path: .picompose-repository
+          persist-credentials: false
 
       - name: Check the version
         run: |
@@ -86,32 +103,50 @@ jobs:
     name: Build (${{ matrix.arch }})
     needs: prepare
     runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
       - name: Checkout package repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Find the shared workflows
+        id: hub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" -q '[.referenced_workflows[] | select(.path | startswith("florian-asche/PiCompose-Repository/.github/workflows/"))][0].sha')"
+          [[ "${sha}" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Could not find the version of the shared workflows."; exit 1; }
+          echo "sha=${sha}" >> "${GITHUB_OUTPUT}"
 
       - name: Checkout build scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: florian-asche/PiCompose-Repository
+          ref: ${{ steps.hub.outputs.sha }}
           path: .picompose-repository
+          persist-credentials: false
 
       - name: Set up QEMU for 32-bit ARM
         if: matrix.arch == 'armhf'
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
         with:
           platforms: linux/arm/v7
 
       - name: Build package
+        env:
+          ARCH: ${{ matrix.arch }}
         run: |
-          ./.picompose-repository/scripts/build-package.sh . "${{ matrix.arch }}" --out "${RUNNER_TEMP}/out"
+          ./.picompose-repository/scripts/build-package.sh . "${ARCH}" --out "${RUNNER_TEMP}/out"
           mkdir out && cp "${RUNNER_TEMP}"/out/*.deb out/
 
       - name: Upload packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: deb-${{ matrix.arch }}
           path: out/*.deb
@@ -130,7 +165,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Download packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: deb-*
           merge-multiple: true

@@ -78,7 +78,9 @@ jobs:
           fi
 
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Install tools
         run: sudo apt-get update && sudo apt-get install -y reprepro python3-yaml
@@ -100,12 +102,15 @@ jobs:
           gpg --list-secret-keys
 
       - name: Check out the published repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO_URL: github.com/${{ github.repository }}.git
         run: |
           if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
-            git clone --branch gh-pages --depth 1 "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" apt-repo
+            git clone --branch gh-pages --depth 1 "https://x-access-token:${GH_TOKEN}@${REPO_URL}" apt-repo
           else
             git init --initial-branch gh-pages apt-repo
-            git -C apt-repo remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+            git -C apt-repo remote add origin "https://x-access-token:${GH_TOKEN}@${REPO_URL}"
           fi
 
       - name: Add packages

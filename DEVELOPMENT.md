@@ -64,7 +64,6 @@ docs/                   documentation
   package-release.yml   reusable release workflow of the previous flow, still used by the keyring
   package-pr-check.yml  reusable check that a pull request has a version label
   publish.yml           publish workflow, started by a package repository after a build
-  remove-package.yml    removes a package from the suites by hand, for example after a rename
   ci.yml                lint of this repository
 ```
 
@@ -108,6 +107,21 @@ gh secret set HUB_DISPATCH_TOKEN --repo florian-asche/PiCompose-Package-Software
 The token expires, so put the expiry date in a calendar. A GitHub App installed on the package repositories avoids that and is the better choice once there are many of them. The workflow only needs a token in the secret `hub-token`, so the change does not touch the package repositories except for the step that creates the token.
 
 To publish a build again, start the workflow "Publish to APT repository" by hand and enter the repository, the channel (`trixie` or `trixie-nightly`) and the ID of the workflow run of the package repository.
+
+## Versions of the shared workflows
+
+The package repositories call the reusable workflows of this repository with a version, for example `uses: florian-asche/PiCompose-Repository/.github/workflows/package-version.yml@v1.0.0`, not with `@main`. Dependabot (ecosystem `github-actions`) proposes the newer tags as pull requests in every package repository, so a change of the workflows reaches the packages only through a reviewed pull request.
+
+- Release a new version of the workflows by creating a release with the tag `vMAJOR.MINOR.PATCH` of this repository. Raise the major version when a package repository has to change its caller workflows (new inputs, new permissions or secrets).
+- The reusable workflows check out the scripts of this repository at exactly the commit of the called version (they look it up in `referenced_workflows` of the run), so workflows and scripts always match. The caller workflows therefore need the permission `actions: read`.
+- Third-party actions are pinned to a commit with the version in a comment (`# v4.4.0`), Dependabot updates both.
+
+## Security
+
+- The signing key exists only in the environment `apt-publish` of this repository. Restrict the environment to the branch `main` and never add workflows that sign anything outside of it.
+- `HUB_DISPATCH_TOKEN` can only start workflows of this repository. The only workflow that uses the signing key and accepts input is `publish.yml`, and it publishes only packages of a successful tag build of a listed repository. Do not add a workflow that changes the APT repository without such a check, because everyone with the token could start it.
+- Give the token only to the workflow of a package repository that needs it (`tag-build.yml`). `build.yml`, which builds every branch and pull request, has no access to the secret. Whoever can push a branch to a package repository can change its workflows, so keep the number of people with write access small and require pull requests for `main`.
+- Shared workflows put values of the event or of inputs into environment variables and never into the script text, and the jobs that build package code have read-only permissions and do not keep the token of the checkout.
 
 ## APT Repository
 

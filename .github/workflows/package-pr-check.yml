@@ -10,7 +10,7 @@ name: Check pull request
 #       branches: [main]
 #   jobs:
 #     check:
-#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-pr-check.yml@main
+#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-pr-check.yml@v1.0.0
 #       permissions:
 #         pull-requests: write
 #         issues: write

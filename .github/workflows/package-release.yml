@@ -7,9 +7,10 @@ name: Release package
 #     workflow_dispatch:
 #   jobs:
 #     release:
-#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-release.yml@main
+#       uses: florian-asche/PiCompose-Repository/.github/workflows/package-release.yml@v1.0.0
 #       permissions:
 #         contents: write
+#         actions: read
 #       secrets:
 #         hub-token: ${{ secrets.HUB_DISPATCH_TOKEN }}
 #
@@ -41,7 +42,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout package repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: main
           fetch-depth: 0
@@ -71,10 +72,11 @@ jobs:
   package:
     name: Package
     needs: release
-    uses: florian-asche/PiCompose-Repository/.github/workflows/package-build.yml@main
+    uses: ./.github/workflows/package-build.yml
     with:
       release-version: ${{ needs.release.outputs.version }}
     permissions:
       contents: write
+      actions: read
     secrets:
       hub-token: ${{ secrets.hub-token }}
