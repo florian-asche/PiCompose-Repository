@@ -13,29 +13,32 @@ This guide describes the repository layout, how to build packages locally and ho
 ```
 package repository                         this repository
 PiCompose-Package-<Name>                   PiCompose-Repository
-  debian/                                    sources.yml   which repositories may publish
-  .github/workflows/*.yml  --calls-->        package-build.yml    build workflow
-        |                                    package-release.yml  release workflow
-        | 1. build in a container            package-pr-check.yml label check
-        | 2. upload the .deb as artifact     publish.yml          check, sign, publish
-        | 3. start publish.yml  -----------> 4. download the artifacts of that run
-                                             5. check, sign, add to the suite
+  debian/                                    sources.yml            which repositories may publish
+  .github/workflows/*.yml  --calls-->        package-version.yml    version, changelog, pre-release
+        |                                    package-tag-build.yml  build of a tag
+        | 1. raise the version, tag          package-build.yml      build of other branches (dev)
+        | 2. build in a container            package-pr-check.yml   label check
+        | 3. upload the .deb as artifact     publish.yml            check, sign, publish
+        | 4. start publish.yml  -----------> 5. download the artifacts of that run
+                                             6. check, sign, add to the suite
 ```
 
-The package repository never sees the signing key. The call only says which repository, channel and workflow run to publish. `publish.yml` downloads the packages itself from the artifacts of that run, and only if the repository is listed in `sources.yml`, the run is a build of `main` of that repository itself (trixie-nightly) or a release (trixie), the package names are the listed ones and the version is a plain release version. A leaked token can therefore only publish builds of `main` that exist already.
+The package repository never sees the signing key. The call only says which repository, channel and workflow run to publish. `publish.yml` downloads the packages itself from the artifacts of that run, and only if the repository is listed in `sources.yml`, the run is a build of a version tag of that repository itself (a pre-release for `trixie-nightly`, a release for `trixie`), the package names are the listed ones and the version is a plain release version. A leaked token can therefore only publish builds of tags that exist already.
 
-**The version belongs to the package.** It is the first entry of `debian/changelog` in the package repository.
+**The version belongs to the package.** It is the first entry of `debian/changelog` in the package repository. The channel is the name of the suite the build is published to.
 
 | Started by | Channel | Result | Version |
 | --- | --- | --- | --- |
-| Push to `main` (a merged pull request) | trixie-nightly | suite `trixie-nightly` | the next version, written to `debian/changelog` |
-| Workflow "Release" | trixie | suite `trixie` and a GitHub release with the tag `v<version>` | the version of `debian/changelog` |
+| Push to `main` (a merged pull request), workflow "Version" | trixie-nightly | commit "Version x.y.z", tag `v<version>` as pre-release, suite `trixie-nightly` | the next version, written to `debian/changelog` |
+| Pre-release turned into a release in the GitHub UI | trixie | suite `trixie` | the version of the tag |
 | Push to any other branch, pull request from a fork | dev | workflow artifact, kept for 14 days | `<version>+dev<timestamp>.<sha>` |
 
 1. **Pull request:** Every pull request needs exactly one of the labels `major`, `minor` and `patch`. It decides how the version is raised when the pull request is merged. The check "Version label" fails until the label is set. The label can be set by hand or by ticking one box under "Version bump" in the pull request description. Pull requests of Dependabot get `patch`. Make the check required in the branch protection of `main`.
-2. **Merge to `main`:** The workflow looks up the commits since the last change of `debian/changelog` with their merged pull requests. The highest label wins (`patch` if there is none), the version is raised accordingly, for example `1.2.3` to `1.3.0` for `minor`. It adds a changelog entry with the titles of the pull requests, commits `debian/changelog` to `main` (the commit "Version 1.3.0"), builds exactly that version and has it published to `trixie-nightly`. No tag is created. Because it looks at all commits since the last version, a merge whose workflow run was skipped by GitHub is not lost.
-3. **Release:** Start the workflow "Release" of the package repository (Actions, Release, Run workflow). It takes the version of `debian/changelog` on `main`, creates the tag `v<version>` on the newest commit with a GitHub release and the notes GitHub generates from the pull requests since the last release, builds the package from the tag and has it published to `trixie`. The tags of a package repository are therefore only releases. A release created by hand in the GitHub UI is not published, and a version that has a tag cannot be released again.
-4. **Branches:** Changes that are tried before they are merged build as dev. The version installs as an upgrade of the last release and nothing is published.
+2. **Merge to `main`:** The workflow "Version" looks up the commits since the last change of `debian/changelog` with their merged pull requests. The highest label wins, the version is raised accordingly, for example `1.2.3` to `1.3.0` for `minor`. It adds a changelog entry with the titles of the pull requests and commits `debian/changelog` to `main` (the commit "Version 1.3.0"). It fails if a pull request has no or more than one label or a commit has no pull request. Start it by hand with a level to get past that.
+3. **Pre-release:** The workflow creates the tag `v1.3.0` on that commit as a pre-release with the release notes GitHub generates for the pull requests since the last tag, and starts the workflow "Build and publish a version" on the tag.
+4. **Build:** The tag is built and published to `trixie-nightly`.
+5. **Release:** In the GitHub UI, turn the pre-release into a release. That builds the tag again and publishes the same version to `trixie`. The release notes are generated again for all pull requests since the last release. Because the tag is the build, builds are linked to their commit.
+6. **Branches:** Changes that are tried before they are merged build as dev. The version installs as an upgrade of the last release and nothing is published.
 
 - `debian/changelog` is part of the package (`/usr/share/doc/<package>/changelog.gz`, shown by `apt changelog`), so the package contains the whole history.
 - A suite holds one version per package. A newer version replaces the previous one. The suite `trixie-nightly` takes the newest build even if its version is lower.
@@ -55,10 +58,12 @@ scripts/
   publish-apt.sh        add .deb files to the repository tree and sign it
 docs/                   documentation
 .github/workflows/
-  package-build.yml     reusable build workflow (trixie-nightly, dev and trixie), called by the package repositories
-  package-release.yml   reusable release workflow: tag, release, then a build for the channel `trixie`
+  package-version.yml   reusable workflow: raise the version, changelog, tag as pre-release
+  package-tag-build.yml reusable workflow: build a tag (pre-release: trixie-nightly, release: trixie)
+  package-build.yml     reusable workflow: dev builds of other branches (and the previous flow)
+  package-release.yml   reusable release workflow of the previous flow, still used by the keyring
   package-pr-check.yml  reusable check that a pull request has a version label
-  publish.yml           publish workflow, started by a package repository after a release
+  publish.yml           publish workflow, started by a package repository after a build
   ci.yml                lint of this repository
 ```
 
@@ -68,7 +73,7 @@ docs/                   documentation
 2. Add the repository and its package names to `sources.yml` in this repository. Publishing is refused until this is merged.
 3. Add the secret `HUB_DISPATCH_TOKEN` to the package repository (see "Dispatch token" below).
 4. In the branch protection of `main` of the package repository, require the check "Version label". Allow the workflows to push to `main` (or exempt `github-actions[bot]`), because the build commits `debian/changelog` there.
-5. Merge a pull request to publish the first build to `trixie-nightly`, then add the package to the table in `README.md`.
+5. Merge a pull request to publish the first build to `trixie-nightly` (the workflow "Version" creates the first pre-release), then add the package to the table in `README.md`.
 
 Conventions:
 
@@ -105,7 +110,7 @@ To publish a build again, start the workflow "Publish to APT repository" by hand
 
 ## APT Repository
 
-The repository is built with [reprepro](https://wiki.debian.org/DebianRepository/SetupWithReprepro) and served as static files from the `gh-pages` branch. The workflow `publish.yml` adds the new packages to that branch and signs the metadata. Only one publish runs at a time. When several arrive at once, GitHub keeps only the newest waiting run, so start the missed one again by hand if a release does not show up.
+The repository is built with [reprepro](https://wiki.debian.org/DebianRepository/SetupWithReprepro) and served as static files from the `gh-pages` branch. The workflow `publish.yml` adds the new packages to that branch and signs the metadata. Only one publish runs at a time. When several arrive at once, GitHub keeps only the newest waiting run, so start the missed one again by hand if a build does not show up.
 
 Suites are defined in `apt/conf/distributions`. Clients only know the repository URL, so the hosting can move later (for example to object storage) without touching any device if a custom domain is used.
 
@@ -145,6 +150,6 @@ Notes:
 
 - **lintian fails the build:** The container output lists the tags. Fix them or add an override in `debian/<package>.lintian-overrides` with a comment explaining why.
 - **`apt-get build-dep` fails:** `Build-Depends` in `debian/control` names a package that does not exist in `trixie`.
-- **A build does not show up:** Check the run of the package repository (the step "Tell the APT repository to publish" fails when `HUB_DISPATCH_TOKEN` is missing or expired), then the run "Publish to APT repository" here. The publish workflow refuses runs that are not a build of `main` or a release of the repository itself, and `check-debs.py` refuses repositories that are not in `sources.yml`, package names that are not listed and versions that are not plain release versions.
+- **A build does not show up:** Check the run of the package repository (the step "Tell the APT repository to publish" fails when `HUB_DISPATCH_TOKEN` is missing or expired), then the run "Publish to APT repository" here. The publish workflow refuses runs that are not a build of a tag of the repository itself, and `check-debs.py` refuses repositories that are not in `sources.yml`, package names that are not listed and versions that are not plain release versions.
 - **The build cannot push `debian/changelog`:** `main` is protected and does not allow the workflow to push. Exempt `github-actions[bot]` or allow it in the ruleset.
 - **Reprepro refuses a package:** The same version with different content is already in the repository. Raise the version.

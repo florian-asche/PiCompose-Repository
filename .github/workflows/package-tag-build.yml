@@ -16,9 +16,9 @@ name: Build package from a tag
 #         hub-token: ${{ secrets.HUB_DISPATCH_TOKEN }}
 #
 # The workflow file has to be named tag-build.yml. It is started on the tag in two ways:
-#   nightly: by package-version.yml with a workflow_dispatch on the tag of a pre-release
+#   trixie-nightly: by package-version.yml with a workflow_dispatch on the tag of a pre-release
 #            (suite trixie-nightly)
-#   stable:  by a release event, when the pre-release is turned into a release in the
+#   trixie: by a release event, when the pre-release is turned into a release in the
 #            GitHub UI (suite trixie). The release notes are generated again for all pull
 #            requests since the last release.
 # The version has to be the first entry of debian/changelog and match the tag.
