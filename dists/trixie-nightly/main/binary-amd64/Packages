@@ -16,6 +16,32 @@ Description: PiCompose APT repository signing key and source
  apt source entry for the stable suite. Keeping the key in a package lets
  it be renewed or replaced with a normal upgrade.
 
+Package: picompose-driver-2michat-v1
+Version: 0.0.1
+Architecture: all
+Maintainer: Florian Asche <github@florian-asche.de>
+Installed-Size: 1203
+Depends: dkms (>= 2.1.0.0), wireplumber, alsa-utils, linux-headers-rpi-v8, i2c-tools, libasound2-plugins, pipewire-bin, kmod
+Conflicts: picompose-audio-driver
+Replaces: picompose-audio-driver
+Provides: picompose-audio-driver
+Homepage: https://github.com/florian-asche/PiCompose-Package-Driver-2MicHat-V1
+Priority: optional
+Section: sound
+Filename: pool/main/p/picompose-driver-2michat-v1/picompose-driver-2michat-v1_0.0.1_all.deb
+Size: 777156
+SHA256: 51801ce6595ff5d38040ff66be7a7a4ec334a48bb8026279eb9ab949ffa2084d
+SHA1: db3ef52cc445354f0d88cfc325f6712f5c0b33b0
+MD5sum: 1c87c00a6c822f1bca2bab9c086d7d22
+Description: PiCompose driver for the ReSpeaker 2-Mics and 4-Mics Pi HAT
+ Kernel module (built with DKMS), device tree overlays and audio setup for
+ the Seeed ReSpeaker 2-Mics, 4-Mics and 6-Mics Pi HATs (WM8960 and AC108
+ codecs). A service detects the HAT on the I2C bus at the first start,
+ configures it and reboots the system once.
+ .
+ The package provides picompose-audio-driver, so only one audio driver package
+ can be installed.
+
 Package: picompose-software-ha-satellite
 Version: 0.0.2
 Architecture: all
