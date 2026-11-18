@@ -42,6 +42,31 @@ Description: PiCompose driver for the ReSpeaker 2-Mics and 4-Mics Pi HAT
  The package provides picompose-audio-driver, so only one audio driver package
  can be installed.
 
+Package: picompose-driver-other
+Version: 0.0.1
+Architecture: all
+Maintainer: Florian Asche <github@florian-asche.de>
+Installed-Size: 19
+Depends: wireplumber, alsa-utils
+Conflicts: picompose-audio-driver
+Replaces: picompose-audio-driver
+Provides: picompose-audio-driver
+Homepage: https://github.com/florian-asche/PiCompose-Package-Driver-Other
+Priority: optional
+Section: sound
+Filename: pool/main/p/picompose-driver-other/picompose-driver-other_0.0.1_all.deb
+Size: 3884
+SHA256: 2916f4d1252736329d58ebfbd3e8351922fd1f4fb09a69ed96eac5bf217aa5eb
+SHA1: 48e5639ddf63da4eca718d510342364f0619a26d
+MD5sum: 64e0ff93437b8c551f772d9ea562b3fd
+Description: PiCompose audio setup for any sound card
+ Sets the volume of the default sound card and its PipeWire sink to the
+ maximum when the system starts. It does not load a driver, it is for sound
+ cards that work without one, for example USB sound cards or HDMI.
+ .
+ The package provides picompose-audio-driver, so only one audio driver package
+ can be installed.
+
 Package: picompose-software-ha-satellite
 Version: 0.0.2
 Architecture: all
