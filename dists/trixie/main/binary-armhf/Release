@@ -1,0 +1,6 @@
+Archive: trixie
+Component: main
+Origin: PiCompose
+Label: PiCompose
+Architecture: armhf
+Description: PiCompose packages (stable)

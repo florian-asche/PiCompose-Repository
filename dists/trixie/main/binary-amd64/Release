@@ -1,0 +1,6 @@
+Archive: trixie
+Component: main
+Origin: PiCompose
+Label: PiCompose
+Architecture: amd64
+Description: PiCompose packages (stable)
