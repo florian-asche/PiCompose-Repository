@@ -117,6 +117,31 @@ Description: PiCompose audio setup for any sound card
  The package provides picompose-audio-driver, so only one audio driver package
  can be installed.
 
+Package: picompose-driver-respeaker-lite
+Version: 0.0.1
+Architecture: all
+Maintainer: Florian Asche <github@florian-asche.de>
+Installed-Size: 22
+Depends: wireplumber, alsa-utils, sox, libsox-fmt-alsa, pipewire-bin
+Conflicts: picompose-audio-driver
+Replaces: picompose-audio-driver
+Provides: picompose-audio-driver
+Homepage: https://github.com/florian-asche/PiCompose-Package-Driver-ReSpeaker-Lite
+Priority: optional
+Section: sound
+Filename: pool/main/p/picompose-driver-respeaker-lite/picompose-driver-respeaker-lite_0.0.1_all.deb
+Size: 4400
+SHA256: e2fd1969a76a4d3412deab5b4a64f8e461a8bf8f9ebfe265ffae62ffbbf1ed84
+SHA1: a45796364c40e92f347778bc8f2782832e438d54
+MD5sum: 1d96c33b0a5968e3997484806099182c
+Description: PiCompose audio setup for the ReSpeaker Lite
+ Keeps the sound card of the ReSpeaker Lite awake by playing silence, and
+ sets the volume of the default sound card and its PipeWire sink to the
+ maximum when the system starts. The ReSpeaker Lite needs no driver.
+ .
+ The package provides picompose-audio-driver, so only one audio driver package
+ can be installed.
+
 Package: picompose-software-ha-satellite
 Version: 0.0.2
 Architecture: all
