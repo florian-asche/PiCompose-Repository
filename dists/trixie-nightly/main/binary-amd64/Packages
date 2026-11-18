@@ -17,18 +17,18 @@ Description: PiCompose APT repository signing key and source
  it be renewed or replaced with a normal upgrade.
 
 Package: picompose-software-hello
-Version: 1.1.4
+Version: 1.1.5
 Architecture: amd64
 Maintainer: Florian Asche <github@florian-asche.de>
 Installed-Size: 11
 Homepage: https://github.com/florian-asche/PiCompose-Package-Software-Hello
 Priority: optional
 Section: misc
-Filename: pool/main/p/picompose-software-hello/picompose-software-hello_1.1.4_amd64.deb
-Size: 2480
-SHA256: 29bd09c807d5e73308884d992cb55143f69e03abe4890720d7cc405b23e26f0b
-SHA1: 4df361637678f97b60a3ca04c6993b46e01342fd
-MD5sum: d245cfa503874231c30af84f54e79674
+Filename: pool/main/p/picompose-software-hello/picompose-software-hello_1.1.5_amd64.deb
+Size: 2524
+SHA256: 4326bc888e551464403b70722805fdb33f1b9b6f13eb49fc579f0bf04597e311
+SHA1: 20d35d1e5dc83d2e68d537f3c509edb2b042e89b
+MD5sum: e014be47de2a8dc84c010bd62e664a1b
 Description: PiCompose test package
  Minimal package that prints a greeting. It exists to test the build,
  signing and publishing pipeline of the PiCompose APT repository end to end
