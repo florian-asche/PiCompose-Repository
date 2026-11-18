@@ -5,44 +5,44 @@ Origin: PiCompose
 Label: PiCompose Nightly
 Suite: trixie-nightly
 Codename: trixie-nightly
-Date: Wed, 18 Nov 2026 01:25:14 UTC
+Date: Wed, 18 Nov 2026 02:59:12 UTC
 Architectures: amd64 arm64 armhf
 Components: main
 Description: PiCompose packages (nightly builds from main)
 MD5Sum:
- f979e77fda5b04c6b0dfbfefbc18ae9c 1494 main/binary-amd64/Packages
- 5a88c6b60fa161e70ba5b4fb2928c2a1 741 main/binary-amd64/Packages.gz
+ 439010e913b79108927c70e010cb0032 1494 main/binary-amd64/Packages
+ 1318dba66a9ae5351956d137492d4b1b 741 main/binary-amd64/Packages.gz
  52ea3128345a1195dace5aadd3bbde26 162 main/binary-amd64/Release
- ae64787daf5aa63fb18b9c7018105d3e 1494 main/binary-arm64/Packages
- 066a2ca5268785e239fad61e6c341cdb 741 main/binary-arm64/Packages.gz
+ 6eb0a5589c1d6e6a4e18fe6ab3aac944 1494 main/binary-arm64/Packages
+ cf88b0ed9c51553df764cc39bde425f7 742 main/binary-arm64/Packages.gz
  32ac71f5d0acc6ec6ef625e3245577aa 162 main/binary-arm64/Release
- b3336e548baa67c7c26c5f2bd4e2a2d6 765 main/binary-armhf/Packages
- 4efb98e65ce73169f85d13303d96571c 483 main/binary-armhf/Packages.gz
+ a5ea10f2888bafa09cc739427306d855 765 main/binary-armhf/Packages
+ 1c635bbc8fc6538f6175165741dc211a 482 main/binary-armhf/Packages.gz
  09c8a299f44b5d4b7aa3361c88b78e3c 162 main/binary-armhf/Release
 SHA1:
- 07147013a0a940d599a7963dcdd833d350e6c079 1494 main/binary-amd64/Packages
- a267df16d9040b7cc4d237ee054c814e76130f9e 741 main/binary-amd64/Packages.gz
+ 58a64c7e18da22b23e32fdb46df1a46446ae9f19 1494 main/binary-amd64/Packages
+ 52a18b1b60ea244692d0bfd14827cb2c8c1aec8a 741 main/binary-amd64/Packages.gz
  4ac2c3c6bb5466cf624abe5d7772578107b8dc2e 162 main/binary-amd64/Release
- eca7876e601c36096647321df67dcf9edf0ee218 1494 main/binary-arm64/Packages
- ab79d97a76f6a7c68dd3197ef7fb1210899339f6 741 main/binary-arm64/Packages.gz
+ ef21d09aee840e02cc2e58a378458cb8ec589143 1494 main/binary-arm64/Packages
+ f4521d8023ac7c1e7bcd50a81046089de38840e7 742 main/binary-arm64/Packages.gz
  faa73514e3ada28f541a02c288ae1937d00f61ab 162 main/binary-arm64/Release
- 6e1c52379182f458a99433b5d85af4928aca8356 765 main/binary-armhf/Packages
- f4359e2d00e7f63167e2fc535c998f8da6020721 483 main/binary-armhf/Packages.gz
+ 51f7e67ea944ad6a75fca571d49b309dcd99f280 765 main/binary-armhf/Packages
+ 95be3a436f753781cc9ee31d42b04a7e28d28898 482 main/binary-armhf/Packages.gz
  aac161f81b171e1a2eeebfea61d61a8bc74c693a 162 main/binary-armhf/Release
 SHA256:
- 98274f8040f6177640fd2d337e0a3f84a62aa00958ba5308b1e3d3bf12849dad 1494 main/binary-amd64/Packages
- fe39d0de789a55def7b3a485282156e36ee42fea65ae34af95b9d464b365b1fb 741 main/binary-amd64/Packages.gz
+ 4d7f49c20b08c41d5ea8b2bc4f9fe29e5960dc0125f1f0d4ea77ce494a5ccce8 1494 main/binary-amd64/Packages
+ 20605366e8e2ddde1849b2320fdee9bb9777dc15f2cd710ed25d1ca9e91f670e 741 main/binary-amd64/Packages.gz
  978037e56379b7410923451c41824094eaf5ab8b3da7dfdf97bf056017b6a6f8 162 main/binary-amd64/Release
- fe8b64148d540765cf24e0d38a47842d09a013603121e6e89171b0c5bcc9a313 1494 main/binary-arm64/Packages
- 4b0319451d22640be5e4b13c5ee96398267f8e7ca4958db01682b55d535a4be3 741 main/binary-arm64/Packages.gz
+ 826876ab7efb97b489fad4a91ccda9dc9cfb2bca521e4d7b630ea6818972d92f 1494 main/binary-arm64/Packages
+ 7fd367d433869f2114ac10ce4202c4add0cc81e7ddbad6ce05e7f234cf03aff2 742 main/binary-arm64/Packages.gz
  e3f938dfe780310b1a9937607f01d29aef20b37a385d2e28a2be07906d471cbf 162 main/binary-arm64/Release
- c7cbc6392ddec69800395584ffbff1813ed17773852dbe69a0dcc80a46dd792e 765 main/binary-armhf/Packages
- 3b3d2d975a7de73d664ca17e9d2b9b668575777c500d6580032200eba0f3c32b 483 main/binary-armhf/Packages.gz
+ ea6e971f36511e688f56953142bb77de6a1143db56ab7300bda969406dd71386 765 main/binary-armhf/Packages
+ 1940a61bd4d7590fb33180cdc03102b7fc7453529a914c15949e4a1dacefc51b 482 main/binary-armhf/Packages.gz
  68f4d7a4afb03607d5ebefe1da4c6734a2347c3034c876fb9b01048b8241b10b 162 main/binary-armhf/Release
 -----BEGIN PGP SIGNATURE-----
 
-iHUEARYKAB0WIQTKO0huF8CXviKd/0ezcRNgfUWcFQUCavz+egAKCRCzcRNgfUWc
-FbnsAPwPwCnG7811fcahpg1BBXkwn3Bi5e2wHpt0tuAUEjeBMQEAkE886SbvsIN7
-pFWHXZpHxQHet/G+dGpXte5hODOW4gA=
-=RKZ/
+iHUEARYKAB0WIQTKO0huF8CXviKd/0ezcRNgfUWcFQUCav0UgAAKCRCzcRNgfUWc
+FUZcAP4pHtp/OA//9eQGw/F26R70Vn4o4sYy61SsYorOdaKACgEAyf8xwVDV7p/I
+X8Yd8Cv0a5djk2biweyCDKlZeUZ1cQY=
+=FZP1
 -----END PGP SIGNATURE-----
