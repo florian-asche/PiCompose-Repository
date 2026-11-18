@@ -1,0 +1,6 @@
+Archive: trixie-nightly
+Component: main
+Origin: PiCompose
+Label: PiCompose Nightly
+Architecture: arm64
+Description: PiCompose packages (nightly builds from main)
