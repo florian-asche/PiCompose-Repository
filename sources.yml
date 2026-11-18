@@ -3,7 +3,7 @@
 repositories:
   florian-asche/PiCompose-Package-Software-Hello:
     packages:
-      - picompose-hello
+      - picompose-software-hello
   florian-asche/PiCompose-Package-Archive-Keyring:
     packages:
       - picompose-archive-keyring
@@ -12,7 +12,7 @@ repositories:
       - picompose-core
   florian-asche/PiCompose-Package-Software-HA-Satellite:
     packages:
-      - ha-satellite
+      - picompose-software-ha-satellite
   florian-asche/PiCompose-Package-Driver-2MicHat-V1:
     packages:
       - picompose-driver-2michat-v1

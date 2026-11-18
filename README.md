@@ -19,9 +19,9 @@ PiCompose installs audio drivers, the audio server configuration, the Docker Com
 | Package | Repository | Description |
 | --- | --- | --- |
 | `picompose-archive-keyring` | [PiCompose-Package-Archive-Keyring](https://github.com/florian-asche/PiCompose-Package-Archive-Keyring) | Signing key and apt source of this repository |
-| `picompose-hello` | [PiCompose-Package-Software-Hello](https://github.com/florian-asche/PiCompose-Package-Software-Hello) | Example package and template, tests the pipeline |
+| `picompose-software-hello` | [PiCompose-Package-Software-Hello](https://github.com/florian-asche/PiCompose-Package-Software-Hello) | Example package and template, tests the pipeline |
 | `picompose-core` | [PiCompose-Package-Core](https://github.com/florian-asche/PiCompose-Package-Core) | Docker, compose manager, PipeWire audio and hostname setup (stage 01 of the image) |
-| `ha-satellite` | [PiCompose-Package-Software-HA-Satellite](https://github.com/florian-asche/PiCompose-Package-Software-HA-Satellite) | Linux voice assistant and Snapcast compose projects (stage 03) |
+| `picompose-software-ha-satellite` | [PiCompose-Package-Software-HA-Satellite](https://github.com/florian-asche/PiCompose-Package-Software-HA-Satellite) | Linux voice assistant and Snapcast compose projects (stage 03) |
 | `picompose-driver-2michat-v1` | [PiCompose-Package-Driver-2MicHat-V1](https://github.com/florian-asche/PiCompose-Package-Driver-2MicHat-V1) | ReSpeaker 2-Mics, 4-Mics and 6-Mics Pi HAT (DKMS) |
 | `picompose-driver-2michat-v2` | [PiCompose-Package-Driver-2MicHat-V2](https://github.com/florian-asche/PiCompose-Package-Driver-2MicHat-V2) | ReSpeaker 2-Mics Pi HAT V2.0 |
 | `picompose-driver-respeaker-lite` | [PiCompose-Package-Driver-ReSpeaker-Lite](https://github.com/florian-asche/PiCompose-Package-Driver-ReSpeaker-Lite) | ReSpeaker Lite |
