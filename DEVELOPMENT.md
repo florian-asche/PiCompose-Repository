@@ -69,7 +69,7 @@ docs/                   documentation
 
 ## Adding a Package
 
-1. Create a repository `PiCompose-Package-<Name>` from the template [PiCompose-Package-Hello](https://github.com/florian-asche/PiCompose-Package-Hello) and follow its README.
+1. Create a repository `PiCompose-Package-<Name>` from the template [PiCompose-Package-Software-Hello](https://github.com/florian-asche/PiCompose-Package-Software-Hello) and follow its README.
 2. Add the repository and its package names to `sources.yml` in this repository. Publishing is refused until this is merged.
 3. Add the secret `HUB_DISPATCH_TOKEN` to the package repository (see "Dispatch token" below).
 4. In the branch protection of `main` of the package repository, require the check "Version label". Allow the workflows to push to `main` (or exempt `github-actions[bot]`), because the build commits `debian/changelog` there.
@@ -89,7 +89,7 @@ Conventions:
 Check out a package repository and build it with the script of this repository:
 
 ```bash
-./scripts/build-package.sh ../PiCompose-Package-Hello amd64
+./scripts/build-package.sh ../PiCompose-Package-Software-Hello amd64
 ```
 
 The `.deb` files end up in `out/`. The script installs the build dependencies in a fresh container, runs `dpkg-buildpackage` and then `lintian`. Errors reported by lintian fail the build. The `debian/changelog` of the repository is used as it is. To build like a dev build, pass `--version <version> --notes-file <file>` to add an entry, see `scripts/build-package.sh`.
@@ -101,7 +101,7 @@ Other architectures run through QEMU emulation when your host is not that archit
 The package repository tells this repository to publish by starting the workflow `publish.yml` (`workflow_dispatch`), which needs a token that may run workflows of this repository. Create a fine-grained personal access token for the owner `florian-asche`, restricted to the repository `PiCompose-Repository` with the permission "Actions: Read and write" and nothing else, so it cannot change any code, and store it as the secret `HUB_DISPATCH_TOKEN` in every package repository:
 
 ```bash
-gh secret set HUB_DISPATCH_TOKEN --repo florian-asche/PiCompose-Package-Hello
+gh secret set HUB_DISPATCH_TOKEN --repo florian-asche/PiCompose-Package-Software-Hello
 ```
 
 The token expires, so put the expiry date in a calendar. A GitHub App installed on the package repositories avoids that and is the better choice once there are many of them. The workflow only needs a token in the secret `hub-token`, so the change does not touch the package repositories except for the step that creates the token.

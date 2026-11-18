@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       repository:
-        description: Package repository, for example florian-asche/PiCompose-Package-Hello
+        description: Package repository, for example florian-asche/PiCompose-Package-Software-Hello
         required: true
       channel:
         description: Channel

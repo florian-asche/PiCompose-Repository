@@ -35,7 +35,7 @@ actually ran, for example the hardware and package version, or "built and linted
 ## Checklist
 
 - [ ] `shellcheck scripts/*.sh` and `yamllint .github/workflows` pass.
-- [ ] A change to a script or to `package-build.yml` was tried with a package repository, for example `PiCompose-Package-Hello`.
+- [ ] A change to a script or to `package-build.yml` was tried with a package repository, for example `PiCompose-Package-Software-Hello`.
 - [ ] `README.md` and `docs/` match the change.
 - [ ] Breaking changes (renamed packages, changed config paths, changed dependencies) are described in the PR.
 - [ ] I reviewed and understand every change in this PR (see [AI policy](AI_POLICY.md)).

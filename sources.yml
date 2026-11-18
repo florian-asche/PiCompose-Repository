@@ -1,7 +1,7 @@
 # Package repositories that may publish to this APT repository.
 # The publish workflow refuses everything that is not listed here.
 repositories:
-  florian-asche/PiCompose-Package-Hello:
+  florian-asche/PiCompose-Package-Software-Hello:
     packages:
       - picompose-hello
   florian-asche/PiCompose-Package-Archive-Keyring:
@@ -10,7 +10,7 @@ repositories:
   florian-asche/PiCompose-Package-Core:
     packages:
       - picompose-core
-  florian-asche/PiCompose-Package-HA-Satellite:
+  florian-asche/PiCompose-Package-Software-HA-Satellite:
     packages:
       - ha-satellite
   florian-asche/PiCompose-Package-Driver-2MicHat-V1:
