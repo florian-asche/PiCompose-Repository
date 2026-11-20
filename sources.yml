@@ -24,7 +24,8 @@ repositories:
       - picompose-driver-respeaker-lite
   florian-asche/PiCompose-Package-Driver-Satellite1:
     packages:
-      - picompose-driver-satellite1
+      - satellite1-rpi-setup-trixie
+      - satellite1-rpi-sdk
   florian-asche/PiCompose-Package-Driver-Other:
     packages:
       - picompose-driver-other
