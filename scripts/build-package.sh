@@ -10,6 +10,9 @@
 #   --notes-file  release or pull request text for the changelog entry
 #   --date        date of the changelog entry as RFC 2822 (default: now)
 #   --out         directory for the resulting .deb files (default: ./out)
+#
+# lintian is skipped when the repository contains the file debian/skip-lintian. Use it only for repositories
+# that republish packages of others unchanged, because their problems cannot be fixed or overridden here.
 set -euo pipefail
 
 if [ $# -lt 2 ]; then
@@ -81,7 +84,11 @@ docker run --rm --platform "$PLATFORM" \
         apt-get build-dep -y -qq ./ >/dev/null
 
         dpkg-buildpackage -us -uc -b
-        lintian --fail-on error --display-info ../*.deb
+        if [ -f debian/skip-lintian ]; then
+            echo "debian/skip-lintian exists, lintian is skipped."
+        else
+            lintian --fail-on error --display-info ../*.deb
+        fi
 
         # Architecture: all packages are published from the amd64 build only.
         if [ "$ARCH" != amd64 ]; then
