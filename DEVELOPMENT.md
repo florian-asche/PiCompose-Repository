@@ -84,14 +84,6 @@ Conventions:
 - Maintainer scripts must run without prompts and must not fail when the hardware is missing.
 - Files that users edit are conffiles below `/etc`. Defaults for user-owned locations like `/compose` are shipped to `/usr/share/picompose/` and copied by `postinst` only if missing.
 
-## Republishing packages of others
-
-A package repository can publish a package of a third party unchanged, for example `PiCompose-Package-Driver-Satellite1` publishes the packages of FutureProofHomes. Its `debian/rules` downloads the `.deb` files while the package is built, checks their SHA256 and copies them to the build output. The package names have to be listed in `sources.yml` like any other.
-
-- lintian reports problems of the foreign packages, such as a missing copyright file, that cannot be fixed or overridden without changing the packages. Add an empty file `debian/skip-lintian` to the package repository to skip lintian in `build-package.sh`. Do not add it to a repository that builds its own content.
-- The version of the package is the version in the `.deb`, not the one in `debian/changelog`. `check-debs.py` accepts a version like `1.5-1`.
-- Check the licence of the packages before you republish them, and say where their source is. The packages of FutureProofHomes are GPL-3.0.
-
 ## Local Build
 
 Check out a package repository and build it with the script of this repository:
@@ -100,7 +92,7 @@ Check out a package repository and build it with the script of this repository:
 ./scripts/build-package.sh ../PiCompose-Package-Software-Hello amd64
 ```
 
-The `.deb` files end up in `out/`. The script installs the build dependencies in a fresh container, runs `dpkg-buildpackage` and then `lintian`. Errors reported by lintian fail the build, unless the repository contains the file `debian/skip-lintian` (see "Republishing packages of others"). The `debian/changelog` of the repository is used as it is. To build like a dev build, pass `--version <version> --notes-file <file>` to add an entry, see `scripts/build-package.sh`.
+The `.deb` files end up in `out/`. The script installs the build dependencies in a fresh container, runs `dpkg-buildpackage` and then `lintian`. Errors reported by lintian fail the build, unless the repository contains the file `debian/skip-lintian`. The `debian/changelog` of the repository is used as it is. To build like a dev build, pass `--version <version> --notes-file <file>` to add an entry, see `scripts/build-package.sh`.
 
 Other architectures run through QEMU emulation when your host is not that architecture, which is slow. Register the emulators once with `docker run --privileged --rm tonistiigi/binfmt --install all`.
 
