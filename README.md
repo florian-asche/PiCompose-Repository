@@ -26,7 +26,6 @@ PiCompose installs audio drivers, the audio server configuration, the Docker Com
 | `picompose-driver-2michat-v2` | [PiCompose-Package-Driver-2MicHat-V2](https://github.com/florian-asche/PiCompose-Package-Driver-2MicHat-V2) | ReSpeaker 2-Mics Pi HAT V2.0 |
 | `picompose-driver-respeaker-lite` | [PiCompose-Package-Driver-ReSpeaker-Lite](https://github.com/florian-asche/PiCompose-Package-Driver-ReSpeaker-Lite) | ReSpeaker Lite |
 | `satellite1-rpi-setup-trixie`, `satellite1-rpi-sdk` | [PiCompose-Package-Driver-Satellite1](https://github.com/florian-asche/PiCompose-Package-Driver-Satellite1) | Satellite1 (packages of FutureProofHomes, republished unchanged) |
-| `picompose-driver-other` | [PiCompose-Package-Driver-Other](https://github.com/florian-asche/PiCompose-Package-Driver-Other) | Sound cards without a driver |
 
 The packages that may publish are listed in [sources.yml](sources.yml). The packages from `picompose-core` on are prepared and not published yet.
 
