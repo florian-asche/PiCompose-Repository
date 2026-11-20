@@ -5,7 +5,7 @@ Origin: PiCompose
 Label: PiCompose Nightly
 Suite: trixie-nightly
 Codename: trixie-nightly
-Date: Fri, 20 Nov 2026 20:23:17 UTC
+Date: Fri, 20 Nov 2026 20:32:23 UTC
 Architectures: amd64 arm64 armhf
 Components: main
 Description: PiCompose packages (nightly builds from main)
@@ -41,8 +41,8 @@ SHA256:
  68f4d7a4afb03607d5ebefe1da4c6734a2347c3034c876fb9b01048b8241b10b 162 main/binary-armhf/Release
 -----BEGIN PGP SIGNATURE-----
 
-iHUEARYKAB0WIQTKO0huF8CXviKd/0ezcRNgfUWcFQUCawCsNQAKCRCzcRNgfUWc
-FZCbAQDc2udR3REnLv2x4IZZ3PIRNQwIu6gtxB0f+7ySNnqRlgD/SLzYkvkcMgeM
-ynDyryeX++6SlHo+h6+eGlGuWQkVrwA=
-=nofG
+iHUEARYKAB0WIQTKO0huF8CXviKd/0ezcRNgfUWcFQUCawCuVwAKCRCzcRNgfUWc
+FYNBAP9LI0Ypp2aVPBP589UOajIbt7lzAcvdgZpopvQNkabgPQEA7rs3qK1d74PQ
+32b1gHgiyBQ+rS1RxJUyM2HhUPIZrQE=
+=ZhNQ
 -----END PGP SIGNATURE-----
