@@ -105,3 +105,43 @@ Description: PiCompose test package
  signing and publishing pipeline of the PiCompose APT repository end to end
  and is not needed on a real device.
 
+Package: satellite1-rpi-sdk
+Version: 0.1.6
+Architecture: arm64
+Maintainer: Mischa <mischa.siekmann@futureproofhomes.net>
+Installed-Size: 80
+Depends: python3-venv, python3-pip, flashrom
+Homepage: https://github.com/futureproofhomes/Satellite1-RPi
+Priority: optional
+Section: misc
+Filename: pool/main/s/satellite1-rpi-sdk/satellite1-rpi-sdk_0.1.6_arm64.deb
+Size: 61324
+SHA256: 5f0f252bbc7ae26047dab53cffa48338af04fafbd3223b47fe4584c53b9cf859
+SHA1: f3a7887b6e7b823aa0cd384b5289db0e0014c384
+MD5sum: 5497354dd99c82da624999dcc82cdfcf
+Description: Satellite1 I2S overlay, ALSA config, and boot-time I²C init
+ Installs Satellite1 device-tree overlay, ALSA PCM config, and a systemd
+ oneshot service that initializes the IO expander and DAC at boot.
+
+Package: satellite1-rpi-setup-trixie
+Source: satellite1-rpi-setup
+Version: 1.5-1
+Architecture: arm64
+Maintainer: Mischa <mischa.siekmann@futureproofhomes.net>
+Installed-Size: 32
+Depends: python3-venv, python3-pip, flashrom, libasound2-plugins
+Recommends: alsa-utils, lm-sensors
+Conflicts: satellite1-rpi-setup
+Replaces: satellite1-rpi-setup
+Homepage: https://github.com/futureproofhomes/Satellite1-RPi
+Priority: optional
+Section: misc
+Filename: pool/main/s/satellite1-rpi-setup/satellite1-rpi-setup-trixie_1.5-1_arm64.deb
+Size: 5640
+SHA256: 34df6d8e0555a0b5edb296ed0cd593db018f1e8e9ea430dfe21ad9e9dd9ac0c0
+SHA1: e7700a6ac9a46ed378a3c0a8429740f183d687c2
+MD5sum: 72e52db85771e63970a0c0f02f20e74c
+Description: Satellite1 I2S overlay, ALSA config, and boot-time I²C init
+ Installs Satellite1 device-tree overlay, ALSA PCM config, and a systemd
+ oneshot service that initializes the IO expander and DAC at boot.
+
