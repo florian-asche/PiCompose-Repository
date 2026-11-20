@@ -1,16 +1,16 @@
 Package: picompose-archive-keyring
-Version: 0.0.4
+Version: 0.0.5
 Architecture: all
 Maintainer: Florian Asche <github@florian-asche.de>
 Installed-Size: 19
 Homepage: https://github.com/florian-asche/PiCompose-Package-Archive-Keyring
 Priority: optional
 Section: misc
-Filename: pool/main/p/picompose-archive-keyring/picompose-archive-keyring_0.0.4_all.deb
-Size: 3248
-SHA256: 98d5af36619868a90f28c063ba27619a59e50d9add654aed0de230b3d86e7b07
-SHA1: a5601d771dd588bd722a509feb010012d1cb8225
-MD5sum: 0fd560400fb7509d8201766b7f6cda3b
+Filename: pool/main/p/picompose-archive-keyring/picompose-archive-keyring_0.0.5_all.deb
+Size: 3296
+SHA256: e6e73cd2fe17bda2bd94f0f45bbade77704775dd859d27ba93688efb73751e06
+SHA1: da4430744006deeafd10f1d85608e009e376aba8
+MD5sum: bfe34e5c8d6fc6e872c629b6ab74d2cb
 Description: PiCompose APT repository signing key and source
  Installs the GPG key that signs the PiCompose APT repository and the
  apt source entry for the stable suite. Keeping the key in a package lets
