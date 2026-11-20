@@ -66,7 +66,7 @@ Description: PiCompose driver for the ReSpeaker 2-Mics and 4-Mics Pi HAT
  can be installed.
 
 Package: picompose-driver-2michat-v2
-Version: 0.0.1
+Version: 0.0.2
 Architecture: all
 Maintainer: Florian Asche <github@florian-asche.de>
 Installed-Size: 33
@@ -77,11 +77,11 @@ Provides: picompose-audio-driver
 Homepage: https://github.com/florian-asche/PiCompose-Package-Driver-2MicHat-V2
 Priority: optional
 Section: sound
-Filename: pool/main/p/picompose-driver-2michat-v2/picompose-driver-2michat-v2_0.0.1_all.deb
-Size: 5732
-SHA256: d3f34152ff5486a061c63b9b08238c415795ac7c3fbd01055d27ab15a02dfee4
-SHA1: f924f9cccc37335467b1444d5412b5d8e2f24f80
-MD5sum: 9fcca627a99c77edeca51a871b792c9e
+Filename: pool/main/p/picompose-driver-2michat-v2/picompose-driver-2michat-v2_0.0.2_all.deb
+Size: 5804
+SHA256: b119ee63af84ecdea93b4552ccd94e68d49824dbd7169e3e8be055b48ebd3d96
+SHA1: f62b4f61687e9b3f5af54b2060a500e1126abb26
+MD5sum: d04e584f2d3259739ce8e99772ae6420
 Description: PiCompose driver for the ReSpeaker 2-Mics Pi HAT V2.0
  Device tree overlay and audio setup for the ReSpeaker 2-Mics Pi HAT V2.0,
  which has a TLV320AIC3104 codec. The kernel already has the driver for the
