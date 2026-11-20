@@ -64,6 +64,7 @@ docs/                   documentation
   package-release.yml   reusable release workflow of the previous flow, still used by the keyring
   package-pr-check.yml  reusable check that a pull request has a version label
   publish.yml           publish workflow, started by a package repository after a build
+  remove-package.yml    removes a package that is no longer published from one suite, started by hand
   ci.yml                lint of this repository
 ```
 
@@ -96,6 +97,10 @@ The `.deb` files end up in `out/`. The script installs the build dependencies in
 
 Other architectures run through QEMU emulation when your host is not that architecture, which is slow. Register the emulators once with `docker run --privileged --rm tonistiigi/binfmt --install all`.
 
+## Removing a package
+
+Start the workflow "Remove a package from the APT repository" by hand (Actions, Run workflow). Choose the channel (`stable` is the suite `trixie`, `nightly` is `trixie-nightly`) and enter the name of the package. It removes all versions from that suite, so run it once per suite. The workflow refuses a package that is still listed in `sources.yml`: remove it there first (for example after a rename), merge, then run the workflow.
+
 ## Dispatch token
 
 The package repository tells this repository to publish by starting the workflow `publish.yml` (`workflow_dispatch`), which needs a token that may run workflows of this repository. Create a fine-grained personal access token for the owner `florian-asche`, restricted to the repository `PiCompose-Repository` with the permission "Actions: Read and write" and nothing else, so it cannot change any code, and store it as the secret `HUB_DISPATCH_TOKEN` in every package repository:
@@ -119,7 +124,7 @@ The package repositories call the reusable workflows of this repository with a v
 ## Security
 
 - The signing key exists only in the environment `apt-publish` of this repository. Restrict the environment to the branch `main` and never add workflows that sign anything outside of it.
-- `HUB_DISPATCH_TOKEN` can only start workflows of this repository. The only workflow that uses the signing key and accepts input is `publish.yml`, and it publishes only packages of a successful tag build of a listed repository. Do not add a workflow that changes the APT repository without such a check, because everyone with the token could start it.
+- `HUB_DISPATCH_TOKEN` can only start workflows of this repository. The only workflow that uses the signing key and accepts input is `publish.yml`, and it publishes only packages of a successful tag build of a listed repository. Do not add a workflow that changes the APT repository without such a check, because everyone with the token could start it. `remove-package.yml` has one: it refuses every package that is still listed in `sources.yml`, so it can only remove packages that are no longer published.
 - Give the token only to the workflow of a package repository that needs it (`tag-build.yml`). `build.yml`, which builds every branch and pull request, has no access to the secret. Whoever can push a branch to a package repository can change its workflows, so keep the number of people with write access small and require pull requests for `main`.
 - Shared workflows put values of the event or of inputs into environment variables and never into the script text, and the jobs that build package code have read-only permissions and do not keep the token of the checkout.
 
