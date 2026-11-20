@@ -141,35 +141,6 @@ Description: PiCompose audio setup for the ReSpeaker Lite
  The package provides picompose-audio-driver, so only one audio driver package
  can be installed.
 
-Package: picompose-driver-satellite1
-Version: 0.0.1
-Architecture: all
-Maintainer: Florian Asche <github@florian-asche.de>
-Installed-Size: 24
-Depends: wireplumber, alsa-utils
-Conflicts: picompose-audio-driver
-Replaces: picompose-audio-driver
-Provides: picompose-audio-driver
-Homepage: https://github.com/florian-asche/PiCompose-Package-Driver-Satellite1
-Priority: optional
-Section: sound
-Filename: pool/main/p/picompose-driver-satellite1/picompose-driver-satellite1_0.0.1_all.deb
-Size: 4300
-SHA256: 81d8d9133f1d86720ecc2da7eb99eca5e9aaf99283a1eea57ce2f41a35e5ae41
-SHA1: db65e6e707b9004c2bf31256ef62962f85125fc6
-MD5sum: aa53fbc0fe0883069a8dcdd32160d08e
-Description: PiCompose audio setup for the Satellite1
- Audio setup for the Satellite1 of FutureProofHomes: it disables the ALSA
- card profile handling of WirePlumber for the sound card of the board and
- sets the volume of the default sound card and its PipeWire sink to the
- maximum when the system starts.
- .
- The driver itself, the kernel and the packages of FutureProofHomes, is not
- part of this package, the PiCompose image installs it.
- .
- The package provides picompose-audio-driver, so only one audio driver package
- can be installed.
-
 Package: picompose-software-ha-satellite
 Version: 0.3.2
 Architecture: all
