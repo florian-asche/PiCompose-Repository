@@ -195,18 +195,18 @@ Description: Home Assistant voice satellite for PiCompose
  is enabled in its picompose.conf.
 
 Package: picompose-software-hello
-Version: 1.1.5
+Version: 1.1.6
 Architecture: amd64
 Maintainer: Florian Asche <github@florian-asche.de>
 Installed-Size: 11
 Homepage: https://github.com/florian-asche/PiCompose-Package-Software-Hello
 Priority: optional
 Section: misc
-Filename: pool/main/p/picompose-software-hello/picompose-software-hello_1.1.5_amd64.deb
-Size: 2524
-SHA256: 4326bc888e551464403b70722805fdb33f1b9b6f13eb49fc579f0bf04597e311
-SHA1: 20d35d1e5dc83d2e68d537f3c509edb2b042e89b
-MD5sum: e014be47de2a8dc84c010bd62e664a1b
+Filename: pool/main/p/picompose-software-hello/picompose-software-hello_1.1.6_amd64.deb
+Size: 2576
+SHA256: c23905ea5fd6ef2f7f5bde1e0ca99f3a25315b253962086762d1c3d686bc5f5b
+SHA1: 6697bbc8cf6202787a2a74850fd7ab788a7abbb2
+MD5sum: f652945b61075236a9ede46e39449b72
 Description: PiCompose test package
  Minimal package that prints a greeting. It exists to test the build,
  signing and publishing pipeline of the PiCompose APT repository end to end
