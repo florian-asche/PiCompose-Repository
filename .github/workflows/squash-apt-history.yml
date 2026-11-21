@@ -1,0 +1,82 @@
+name: Squash the history of the APT repository
+
+# Started by hand (Actions, Run workflow). The branch gh-pages holds one commit for every publish,
+# so its history only grows. The workflow saves the current state as an artifact, creates a new
+# branch with a single commit that has exactly the same files, and replaces gh-pages with it.
+# It refuses to push if the files of the new commit differ from the old ones or if gh-pages
+# changed in the meantime.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Rewrite the history of gh-pages? The old history is gone afterwards, the current files are kept
+        required: true
+        type: choice
+        default: "no"
+        options:
+          - "no"
+          - "yes"
+
+permissions:
+  contents: read
+
+jobs:
+  squash:
+    name: Squash
+    runs-on: ubuntu-24.04
+    environment: apt-publish
+    concurrency:
+      group: apt-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    env:
+      CONFIRM: ${{ inputs.confirm }}
+    steps:
+      - name: Check the confirmation
+        run: |
+          [ "${CONFIRM}" = yes ] || { echo "::error::Not confirmed, nothing was changed. Choose yes to rewrite the history."; exit 1; }
+
+      - name: Check out the published repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO_URL: github.com/${{ github.repository }}.git
+        run: git clone --branch gh-pages "https://x-access-token:${GH_TOKEN}@${REPO_URL}" apt-repo
+
+      - name: Save the current state
+        run: |
+          old="$(git -C apt-repo rev-parse HEAD)"
+          echo "OLD_COMMIT=${old}" >> "${GITHUB_ENV}"
+          echo "Commits before: $(git -C apt-repo rev-list --count HEAD)"
+          tar --create --gzip --exclude=.git --file apt-repo-backup.tar.gz --directory apt-repo .
+
+      - name: Upload the backup
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: apt-repo-backup
+          path: apt-repo-backup.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create the new branch with one commit
+        run: |
+          cd apt-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan gh-pages-squashed
+          git add --all
+          git commit -q -m "Squash the history of the APT repository (was ${OLD_COMMIT})"
+          if [ "$(git rev-parse 'HEAD^{tree}')" != "$(git rev-parse "${OLD_COMMIT}^{tree}")" ]; then
+            echo "::error::The files of the new commit differ from the files of gh-pages, nothing was pushed."
+            exit 1
+          fi
+
+      - name: Replace gh-pages
+        run: |
+          cd apt-repo
+          git push --force-with-lease="gh-pages:${OLD_COMMIT}" origin gh-pages-squashed:gh-pages
+          {
+            echo "gh-pages is now one commit: $(git rev-parse HEAD)"
+            echo "The old state was ${OLD_COMMIT}. The backup is the artifact apt-repo-backup (30 days)."
+          } >> "${GITHUB_STEP_SUMMARY}"

@@ -65,6 +65,7 @@ docs/                   documentation
   package-pr-check.yml  reusable check that a pull request has a version label
   publish.yml           publish workflow, started by a package repository after a build
   remove-package.yml    removes a package that is no longer published from one suite, started by hand
+  squash-apt-history.yml replaces the history of gh-pages with one commit, started by hand
   ci.yml                lint of this repository
 ```
 
@@ -101,6 +102,12 @@ Other architectures run through QEMU emulation when your host is not that archit
 
 Start the workflow "Remove a package from the APT repository" by hand (Actions, Run workflow). Choose the channel (`stable` is the suite `trixie`, `nightly` is `trixie-nightly`) and enter the name of the package. It removes all versions from that suite, so run it once per suite. The workflow refuses a package that is still listed in `sources.yml`: remove it there first (for example after a rename), merge, then run the workflow.
 
+## Squashing the history of gh-pages
+
+Every publish adds a commit to `gh-pages`, so the history grows with time. Start the workflow "Squash the history of the APT repository" by hand (Actions, Run workflow) and choose `yes` to cut it. The workflow saves the files of `gh-pages` as the artifact `apt-repo-backup` (30 days), creates a new branch with a single commit that has exactly the same files, checks that the files are identical and replaces `gh-pages` with it (`--force-with-lease`, so it fails if a publish was faster). With `no` nothing happens. It waits for a running publish, because it shares the concurrency group `apt-publish`.
+
+The old history is gone afterwards, only the artifact keeps the files. GitHub frees the space of the old commits later, not immediately. GitHub Pages deploys the same files again.
+
 ## Dispatch token
 
 The package repository tells this repository to publish by starting the workflow `publish.yml` (`workflow_dispatch`), which needs a token that may run workflows of this repository. Create a fine-grained personal access token for the owner `florian-asche`, restricted to the repository `PiCompose-Repository` with the permission "Actions: Read and write" and nothing else, so it cannot change any code, and store it as the secret `HUB_DISPATCH_TOKEN` in every package repository:
@@ -124,7 +131,7 @@ The package repositories call the reusable workflows of this repository with a v
 ## Security
 
 - The signing key exists only in the environment `apt-publish` of this repository. Restrict the environment to the branch `main` and never add workflows that sign anything outside of it.
-- `HUB_DISPATCH_TOKEN` can only start workflows of this repository. The only workflow that uses the signing key and accepts input is `publish.yml`, and it publishes only packages of a successful tag build of a listed repository. Do not add a workflow that changes the APT repository without such a check, because everyone with the token could start it. `remove-package.yml` has one: it refuses every package that is still listed in `sources.yml`, so it can only remove packages that are no longer published.
+- `HUB_DISPATCH_TOKEN` can only start workflows of this repository. The only workflow that uses the signing key and accepts input is `publish.yml`, and it publishes only packages of a successful tag build of a listed repository. Do not add a workflow that changes the APT repository without such a check, because everyone with the token could start it. `remove-package.yml` has one: it refuses every package that is still listed in `sources.yml`, so it can only remove packages that are no longer published. `squash-apt-history.yml` keeps the files and only rewrites the history, and it refuses to push if the files differ.
 - Give the token only to the workflow of a package repository that needs it (`tag-build.yml`). `build.yml`, which builds every branch and pull request, has no access to the secret. Whoever can push a branch to a package repository can change its workflows, so keep the number of people with write access small and require pull requests for `main`.
 - Shared workflows put values of the event or of inputs into environment variables and never into the script text, and the jobs that build package code have read-only permissions and do not keep the token of the checkout.
 
