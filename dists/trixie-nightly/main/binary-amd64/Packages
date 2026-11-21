@@ -40,27 +40,27 @@ Description: PiCompose base system
  part of this package, the PiCompose image installs them.
 
 Package: picompose-driver-2michat-v1
-Version: 1.0.0
+Version: 1.0.1
 Architecture: all
 Maintainer: Florian Asche <github@florian-asche.de>
-Installed-Size: 12
+Installed-Size: 18
 Conflicts: picompose-audio-driver
 Replaces: picompose-audio-driver
 Provides: picompose-audio-driver
 Homepage: https://github.com/florian-asche/PiCompose-Package-Driver-2MicHat-V1
 Priority: optional
 Section: sound
-Filename: pool/main/p/picompose-driver-2michat-v1/picompose-driver-2michat-v1_1.0.0_all.deb
-Size: 3080
-SHA256: 63eae21e577228ad7ff072b0ac316705478625c2b86a3c92c9b880accc3c4e8c
-SHA1: 391e1aead54863e0e50c9c6dc3fe49b0eaa56295
-MD5sum: 43975fd8d15390d900a28e1f4f6f9752
+Filename: pool/main/p/picompose-driver-2michat-v1/picompose-driver-2michat-v1_1.0.1_all.deb
+Size: 4300
+SHA256: faf70f47a08e700c06b408b2d61a175dafb0b28abff36a6ef1a7dc8691340288
+SHA1: 1089a5bfd9866c653b19a387e95a307922c8ddc7
+MD5sum: a552d638d65f2eb5c29015fdb9476d96
 Description: PiCompose driver for the ReSpeaker 2-Mics Pi HAT (version 1)
- Boot configuration for the ReSpeaker 2-Mics Pi HAT, which has a WM8960
- codec. The kernel of Raspberry Pi OS has the driver for the codec and the
- overlay wm8960-soundcard, so no kernel module is built. The package enables
- I2C and SPI (for the LEDs of the HAT) and loads the overlay in the boot
- configuration.
+ Device tree overlay for the ReSpeaker 2-Mics Pi HAT (version 1), which has a
+ WM8960 codec. The kernel already has the driver for the codec, so the
+ package only needs the overlay of Seeed that connects it to the I2S pins of
+ the Raspberry Pi. It enables I2C and SPI (for the LEDs of the HAT) and loads
+ the overlay in the boot configuration.
  .
  The package provides picompose-audio-driver, so only one audio driver package
  can be installed.
