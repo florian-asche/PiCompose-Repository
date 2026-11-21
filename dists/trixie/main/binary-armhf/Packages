@@ -118,18 +118,18 @@ Description: PiCompose audio setup for the ReSpeaker Lite
  can be installed.
 
 Package: picompose-software-ha-satellite
-Version: 0.3.1
+Version: 0.3.3
 Architecture: all
 Maintainer: Florian Asche <github@florian-asche.de>
 Installed-Size: 40
 Homepage: https://github.com/florian-asche/PiCompose-Package-Software-HA-Satellite
 Priority: optional
 Section: admin
-Filename: pool/main/p/picompose-software-ha-satellite/picompose-software-ha-satellite_0.3.1_all.deb
-Size: 8996
-SHA256: 0c45d68ab607c85a12c3517c742b6fc26c8ebd2ea5068f96e11f2ddc99d6318a
-SHA1: 1fd83632c21407bfc2751750a35caa660ab5f78a
-MD5sum: 064e9260ebebd39f3b9765437f6311e9
+Filename: pool/main/p/picompose-software-ha-satellite/picompose-software-ha-satellite_0.3.3_all.deb
+Size: 9184
+SHA256: 94fd002648044a7490eeb00e21a973c71b0c2f83a3e78bec13a15fd51e4969d3
+SHA1: da507762b9c11d87e33574a70f4f413b001bdd2e
+MD5sum: b3daf48ad0020ea87b7fde7c235071eb
 Description: Home Assistant voice satellite for PiCompose
  Compose projects that turn a PiCompose system into a Home Assistant voice
  satellite: the Linux voice assistant, a Snapcast client and a Music Assistant
