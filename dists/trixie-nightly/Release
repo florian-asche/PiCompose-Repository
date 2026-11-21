@@ -2,37 +2,37 @@ Origin: PiCompose
 Label: PiCompose Nightly
 Suite: trixie-nightly
 Codename: trixie-nightly
-Date: Sat, 21 Nov 2026 03:47:24 UTC
+Date: Sat, 21 Nov 2026 04:01:40 UTC
 Architectures: amd64 arm64 armhf
 Components: main
 Description: PiCompose packages (nightly builds from main)
 MD5Sum:
- c40fbcf00f91c47c27fef289d385d42d 7939 main/binary-amd64/Packages
- 7321a226211be0c5310cf0094c1e4888 2583 main/binary-amd64/Packages.gz
+ e030c6835484e58c0d2b2da028bed116 7939 main/binary-amd64/Packages
+ 731d96e530bf4e04cbfab44394010951 2589 main/binary-amd64/Packages.gz
  52ea3128345a1195dace5aadd3bbde26 162 main/binary-amd64/Release
- 57e65cd07c39d842915d9ba70b3ae193 9591 main/binary-arm64/Packages
- f70ce6491113fd00181b07b2468ff1d0 3070 main/binary-arm64/Packages.gz
+ bb62ae70e9f3a3ab14fdf3797c8f07a1 9591 main/binary-arm64/Packages
+ d23a077061ced919c33a54533861650e 3074 main/binary-arm64/Packages.gz
  32ac71f5d0acc6ec6ef625e3245577aa 162 main/binary-arm64/Release
- 87c1b0f10623ad68495b5389ffb300ac 7210 main/binary-armhf/Packages
- ffd4ed5b701452cb0e4f3244c933f8b3 2350 main/binary-armhf/Packages.gz
+ 807681f6651f3ce0c1732ab68cebb5c2 7210 main/binary-armhf/Packages
+ 60740fb3acf1905cc7790a8363c35bd6 2353 main/binary-armhf/Packages.gz
  09c8a299f44b5d4b7aa3361c88b78e3c 162 main/binary-armhf/Release
 SHA1:
- 89719fb14b7ed292c0fb0b539ee6fb8bd3733bfe 7939 main/binary-amd64/Packages
- ff91839ff3f21e88dbea20b5afba6a78cfc2e0d5 2583 main/binary-amd64/Packages.gz
+ bfdd83fb082baba143a5703c3e8fb47cf1962473 7939 main/binary-amd64/Packages
+ bfa31158c4f124f017eb971963d1274be14b088f 2589 main/binary-amd64/Packages.gz
  4ac2c3c6bb5466cf624abe5d7772578107b8dc2e 162 main/binary-amd64/Release
- 12e7009d2661a7bbff6cb300a2d5350f820e0191 9591 main/binary-arm64/Packages
- 32d14357381d49a92b4cb7c8e3ad78fb473b4c43 3070 main/binary-arm64/Packages.gz
+ 78401e1d56077f65cbd112822823cc9bd1ef8d94 9591 main/binary-arm64/Packages
+ 18d41e524289b57dcb6c8bae85fc8c32cf4d1e9f 3074 main/binary-arm64/Packages.gz
  faa73514e3ada28f541a02c288ae1937d00f61ab 162 main/binary-arm64/Release
- 9baee99cfde60d6ede4dba8b18b8cad71f9ed5ad 7210 main/binary-armhf/Packages
- acd4d88209a4263e46eb6e3dde8b4f24d2f646dc 2350 main/binary-armhf/Packages.gz
+ 9f9602811ac1e72159c4f702b52447baf2d0821e 7210 main/binary-armhf/Packages
+ 2f50851660051d9ef5216b755df327fe3d0654cf 2353 main/binary-armhf/Packages.gz
  aac161f81b171e1a2eeebfea61d61a8bc74c693a 162 main/binary-armhf/Release
 SHA256:
- 9b30a6b2ea2da6daeb4a1ade796127b982dcbe917f80862a10e5b8565f2abe34 7939 main/binary-amd64/Packages
- 06cdf117d43debefb941008e8b09f12a60a39a9320004951dffda46769ae30d2 2583 main/binary-amd64/Packages.gz
+ fc476c248f5ae27b8ca625663bdae30d9095d74a574a3804ae9cb5c752a20dc8 7939 main/binary-amd64/Packages
+ 74a423e7de3f8e201f92132895c7f2cd12c19535863789adfe0bbb6a50be734a 2589 main/binary-amd64/Packages.gz
  978037e56379b7410923451c41824094eaf5ab8b3da7dfdf97bf056017b6a6f8 162 main/binary-amd64/Release
- 4648cf83d63e6516d55d150a303e1b716f74bf6fe38f351da1a4f49b539d49c1 9591 main/binary-arm64/Packages
- 44d8d642433956d01b3221a48ccb6597194731660876eba89d33c24d1857eba2 3070 main/binary-arm64/Packages.gz
+ afc58ae5a5cae9281a93d41e33eb2e413467335553d5f7e05f3b4088e62de145 9591 main/binary-arm64/Packages
+ e7c9edeacfbcdd9e27f2ac924e3df47a6bc785297a077f7b4e62cb525bfbaaa8 3074 main/binary-arm64/Packages.gz
  e3f938dfe780310b1a9937607f01d29aef20b37a385d2e28a2be07906d471cbf 162 main/binary-arm64/Release
- 40e09bba346650a45bb9e56d053dc76340a151361d75bf60958b0dae747f87f9 7210 main/binary-armhf/Packages
- eeafbf801d7f82251d1fe9f63384b040c020ea49864f3e8683eb4c35fcdae2d6 2350 main/binary-armhf/Packages.gz
+ fc08df302417d3f0f480216a0e5dc7cae9bf4edac3db21fe3a10775f2831ffd3 7210 main/binary-armhf/Packages
+ 489b0025eb255e711870e23cb7ca681763b788f1ae865578492908194bc13212 2353 main/binary-armhf/Packages.gz
  68f4d7a4afb03607d5ebefe1da4c6734a2347c3034c876fb9b01048b8241b10b 162 main/binary-armhf/Release

@@ -40,7 +40,7 @@ Description: PiCompose base system
  part of this package, the PiCompose image installs them.
 
 Package: picompose-driver-2michat-v1
-Version: 1.0.2
+Version: 1.0.3
 Architecture: all
 Maintainer: Florian Asche <github@florian-asche.de>
 Installed-Size: 27
@@ -50,11 +50,11 @@ Provides: picompose-audio-driver
 Homepage: https://github.com/florian-asche/PiCompose-Package-Driver-2MicHat-V1
 Priority: optional
 Section: sound
-Filename: pool/main/p/picompose-driver-2michat-v1/picompose-driver-2michat-v1_1.0.2_all.deb
-Size: 5228
-SHA256: ce6bd58dc96b52bae7e75d63602ba71b1fe31ddaa9fc20fbe435c4d002313dd3
-SHA1: 21efc284e8f40023946c33151a2c37d0b999e85f
-MD5sum: d685b3b66d7f07e1da170e9b3353724f
+Filename: pool/main/p/picompose-driver-2michat-v1/picompose-driver-2michat-v1_1.0.3_all.deb
+Size: 5284
+SHA256: 7af816bbc8fca01f1cc31d7c9012fc37773b664875ce60d303079e98078062ed
+SHA1: f569ff5767ed6245875650ed063eb874cbb1d2bd
+MD5sum: ba79a6d08ca73fcb2000fdaa915bb95d
 Description: PiCompose driver for the ReSpeaker 2-Mics Pi HAT (version 1)
  Device tree overlay for the ReSpeaker 2-Mics Pi HAT (version 1), which has a
  WM8960 codec. The kernel already has the driver for the codec, so the
