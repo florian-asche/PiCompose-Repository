@@ -40,27 +40,28 @@ Description: PiCompose base system
  part of this package, the PiCompose image installs them.
 
 Package: picompose-driver-2michat-v2
-Version: 0.1.0
+Version: 0.2.0
 Architecture: all
 Maintainer: Florian Asche <github@florian-asche.de>
-Installed-Size: 23
+Installed-Size: 28
 Conflicts: picompose-audio-driver
 Replaces: picompose-audio-driver
 Provides: picompose-audio-driver
 Homepage: https://github.com/florian-asche/PiCompose-Package-Driver-2MicHat-V2
 Priority: optional
 Section: sound
-Filename: pool/main/p/picompose-driver-2michat-v2/picompose-driver-2michat-v2_0.1.0_all.deb
-Size: 4036
-SHA256: c0d5045d61fab172a843cb397c1f92b2bbc51ac779edd1c438e2d66bf525178f
-SHA1: 0add28edf5ee7b1fb74175b6feef858255f55c03
-MD5sum: de8d22a64c416bd1adf731037ecdf7ec
+Filename: pool/main/p/picompose-driver-2michat-v2/picompose-driver-2michat-v2_0.2.0_all.deb
+Size: 4712
+SHA256: 9627455ce0a724daeadb73d3241303a99a9cd713b9a9649cf64977605cf2e63d
+SHA1: 5439588f14314217fd64210eac31a221734e70ad
+MD5sum: 29bab09be99dadfa6b8870c04a3621dd
 Description: PiCompose driver for the ReSpeaker 2-Mics Pi HAT V2.0
  Device tree overlay for the ReSpeaker 2-Mics Pi HAT V2.0,
  which has a TLV320AIC3104 codec. The kernel already has the driver for the
  codec, so the package only needs the overlay that connects it to the I2S
  pins of the Raspberry Pi. It enables I2C and loads the overlay in the boot
- configuration.
+ configuration, and adds a profile set for the sound card so that the volume
+ of the sink controls the DAC of the codec.
  .
  The package provides picompose-audio-driver, so only one audio driver package
  can be installed.
