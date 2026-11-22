@@ -118,28 +118,28 @@ Description: PiCompose audio setup for the ReSpeaker Lite
  can be installed.
 
 Package: picompose-software-ha-satellite
-Version: 0.3.7
+Version: 0.4.0
 Architecture: all
 Maintainer: Florian Asche <github@florian-asche.de>
-Installed-Size: 45
+Installed-Size: 52
 Homepage: https://github.com/florian-asche/PiCompose-Package-Software-HA-Satellite
 Priority: optional
 Section: admin
-Filename: pool/main/p/picompose-software-ha-satellite/picompose-software-ha-satellite_0.3.7_all.deb
-Size: 10920
-SHA256: 21116c88f1d2426c265b63117c2b1408a1c5ce37dfc32500a2799712c06b983b
-SHA1: 45c8c844d5a81557fab18d053e3c8ed08a9bf1bc
-MD5sum: 552928e3f62c76855dbd8debe34379c9
+Filename: pool/main/p/picompose-software-ha-satellite/picompose-software-ha-satellite_0.4.0_all.deb
+Size: 12148
+SHA256: 3ab0586644074bc27974375da69f9fa9bc07c90ef3ad28a4a2035666036fb18e
+SHA1: dacf6ea36ca378b0bb2477e1f4a11b010fdfed23
+MD5sum: f12c53a8db8354ac58183b00805f81a3
 Description: Home Assistant voice satellite for PiCompose
  Compose projects that turn a PiCompose system into a Home Assistant voice
- satellite: the Linux voice assistant, a Snapcast client and a Music Assistant
- Local Audio player for audio playback.
+ satellite: the Linux voice assistant, a Snapcast client, a Music Assistant
+ Local Audio player for audio playback and a Bluetooth proxy.
  .
  The projects are copied to /compose, where the PiCompose compose manager
  deploys them. docker-compose.yml is updated with the package, picompose.conf
- and .env are only written on first installation. The Linux voice assistant and
- the Local Audio player are enabled, the Snapcast client is disabled until it
- is enabled in its picompose.conf.
+ and .env are only written on first installation. The Linux voice assistant,
+ the Local Audio player and the Bluetooth proxy are enabled, the Snapcast client
+ is disabled until it is enabled in its picompose.conf.
 
 Package: picompose-software-hello
 Version: 1.1.4
